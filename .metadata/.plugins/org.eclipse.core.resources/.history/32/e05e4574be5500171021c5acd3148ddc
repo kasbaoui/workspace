@@ -1,0 +1,99 @@
+<%@ include file="../commons/init.jsp" %>
+<%@ taglib uri="http://www.isban.com/portlet/isb-editor" prefix="isb-editor" %>
+
+<ipf:actionURL action="<%=P064InfoClusterGroupAlphabeticalKey.ACTION_W064INFOCLUSTERGROUPALPHABETICAL_EDIT%>" var="urlSavePreferences"></ipf:actionURL>
+
+<ipf:view>
+	<div class="lrwmaineditor">
+		<div class="lrweditor">
+
+			<c:if test="${beanPref.errorMessagePreferences == 'TRUE'}">
+			<div class="portlet-msg-error">
+			  <span><fmt:message key="064informclustergroupalphabetical.error" bundle="${lang}"/></span>
+			</div>
+			</c:if>
+			<c:if test="${beanPref.succesfulSavedPreferences == 'TRUE'}">
+			<div class="portlet-msg-success">
+			  <span><fmt:message key="064informclustergroupalphabetical.saveok" bundle="${lang}"/></span>
+			</div>
+			</c:if>
+			<c:if test="${beanPref.errorEmptyMandatoryPreferences == 'TRUE'}">
+			<div class="portlet-msg-error">
+			  <span><fmt:message key="064informclustergroupalphabetical.prefoblivac" bundle="${lang}"/></span>
+			</div>
+			</c:if>
+				
+			<form method="POST" id="<portlet:namespace/>Form" action="${urlSavePreferences}" >
+				<div class="lrwedit">
+
+				<%---------------  RichCombo Agrups ---------------%>
+				<c:set var="bundleEditorsRC" value="${richComboAgrupBean.bundleEditor}"/>
+				<c:set var="selectIdRC" value="${richComboAgrupBean.selectId}"/>
+				<c:set var="selectDefaultRC" value="${richComboAgrupBean.selectDefault}"/>
+				<c:set var="inputIdRC" value="${richComboAgrupBean.inputId}"/>
+				<c:set var="inputDefaultRC" value="${richComboAgrupBean.inputDefault}"/>
+				<c:set var="selectActionIdRC" value="${richComboAgrupBean.selectActionId}"/>
+				<c:set var="selectActionDefaultRC" value="${richComboAgrupBean.selectActionDefault}"/>
+				<ipf:actionURL var="actionURLRCAgrup" action="${richComboAgrupBean.actionRichCombo}"></ipf:actionURL>
+				<c:set var="actionRichComboRC" value="${actionURLRCAgrup}"/>
+				<c:set var="labelKeyRC" value="${richComboAgrupBean.labelKey}"/>
+				<isb-editor:richcombo
+					lang="${bundleEditorsRC}"
+					labelKey="${labelKeyRC}"
+					ajaxActionComboData="${actionRichComboRC}"
+					idSelect="${selectIdRC}"
+					idSelectComboData="${selectActionIdRC}"
+					idInputTextData="${inputIdRC}"
+					valueSelect="${selectDefaultRC}"
+					valueInputTextData="${inputDefaultRC}" 
+					valueSelectComboData="${selectActionDefaultRC}"
+				/>
+
+					
+
+				<%---------------  RichCombo Barras ---------------%>
+				<c:set var="bundleEditorsRC" value="${richComboBarraBean.bundleEditor}"/>
+				<c:set var="selectIdRC" value="${richComboBarraBean.selectId}"/>
+				<c:set var="selectDefaultRC" value="${richComboBarraBean.selectDefault}"/>
+				<c:set var="inputIdRC" value="${richComboBarraBean.inputId}"/>
+				<c:set var="inputDefaultRC" value="${richComboBarraBean.inputDefault}"/>
+				<c:set var="selectActionIdRC" value="${richComboBarraBean.selectActionId}"/>
+				<c:set var="selectActionDefaultRC" value="${richComboBarraBean.selectActionDefault}"/>
+				<ipf:actionURL var="actionURLRCBarra" action="${richComboBarraBean.actionRichCombo}"></ipf:actionURL>
+				<c:set var="actionRichComboRC" value="${actionURLRCBarra}"/>
+				<c:set var="labelKeyRC" value="${richComboBarraBean.labelKey}"/>
+				<isb-editor:richcombo
+					lang="${bundleEditorsRC}"
+					labelKey="${labelKeyRC}"
+					ajaxActionComboData="${actionRichComboRC}"
+					idSelect="${selectIdRC}"
+					idSelectComboData="${selectActionIdRC}"
+					idInputTextData="${inputIdRC}"
+					valueSelect="${selectDefaultRC}"
+					valueInputTextData="${inputDefaultRC}" 
+					valueSelectComboData="${selectActionDefaultRC}"
+				/>
+
+
+					<%---------------  ComboBox Visual ---------------%>
+					<div class="lrwrow">
+						<label for="<portlet:namespace/>Visual" class="lrwlabel" >
+							<fmt:message key="064informclustergroupalphabetical.Display" bundle="${lang}"/>*
+						</label>
+						<span class="lrwelement">
+							<select class="lrwselect01" name="<portlet:namespace/>Visual" id="<portlet:namespace/>Visual">
+								<option value="LP3A"><fmt:message key="064informclustergroupalphabetical.text.Display1" bundle="${lang}"/> </option>
+							</select>
+						</span>
+					</div>
+					
+				</div>
+				<div class="lrwfoot">
+					<input type="submit" id="<portlet:namespace/>btSubmit" name="<portlet:namespace/>btSubmit" 
+							value="<fmt:message key='064informclustergroupalphabetical.Save' bundle='${lang}'/>" />
+				</div>				
+			</form>	
+
+		</div>
+	</div>
+</ipf:view>

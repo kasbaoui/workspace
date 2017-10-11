@@ -1,0 +1,128 @@
+<classpath>
+  <container id="invertia-db-noesis-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+  <container id="invertia-ftp-cron-job-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+  <container id="invertia-ftp-noesis-consenso-cron-job-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+  <container id="invertia-newsletter-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/jstl-api.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/jstl-impl.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+  <container id="invertia-europapress-ftp-cron-job-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/Users/saber/workspace/liferay-portal-6.2-ce-ga4/tomcat-7.0.42/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+  <container id="invertia-ftp-boletin-cron-job-portlet!com.liferay.ide.eclipse.server.plugin.container/portlet">
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-bridges.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-java.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/util-taglib.jar">
+      <source-attachment-path>C:/workspace/liferay-portal-src-6.2-ce-ga4-20150416163831865 (1).zip</source-attachment-path>
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/log4j.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+    <entry id="C:/workspace/liferay-portal-6.2-ce-ga5/tomcat-7.0.62/webapps/ROOT/WEB-INF/lib/commons-logging.jar">
+      <attribute name="javadoc_location">null</attribute>
+    </entry>
+  </container>
+</classpath>

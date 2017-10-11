@@ -1,0 +1,157 @@
+package com.isban.p064informclustergroupalphabetical.integration;
+
+import com.isban.model.TipoAgrupadorPreferencias;
+import com.isban.model.TipoAgrupadores;
+import com.isban.model.TipoAgrupadoresPaginado;
+import com.isban.model.TipoAgrupadoresPaginadoDR;
+import com.isban.portales.utilidades.commons.exceptions.functional.WSAccessException;
+import com.isban.portales.utilidades.commons.exceptions.technical.BadWSParametersException;
+import com.isban.portales.utilidades.commons.exceptions.technical.TechnicalException;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+
+
+public class P064InfoClusterGroupAlphabeticalIntegration {
+
+
+
+  /**
+   * Method that takes a Preferences Multibar from WebServices
+   * 
+   * @param subtype
+   * @param channel
+   * @param company
+   * @param language
+   * @param state
+   * @return TipoAgrupador
+   * @throws WSAccessException
+   * @throws TechnicalException
+   * @throws Exception
+   */
+  public static TipoAgrupadorPreferencias getSanAgrupadorPreferencias(String subtype, String language, String portal, String secure) throws WSAccessException, TechnicalException {
+    TipoAgrupadorPreferencias results = null;
+    try {
+
+      com.isban.wsclients.sanagrupadorpreferencias.AssetPortType portWS = (com.isban.wsclients.sanagrupadorpreferencias.AssetPortType) GenericUtils.getWS(com.isban.wsclients.sanagrupadorpreferencias.AssetService.class, com.isban.wsclients.sanagrupadorpreferencias.AssetPortType.class);
+      results = (TipoAgrupadorPreferencias) GenericUtils.throwExceptionIfIsAnErrorClass(portWS.sanAgrupadorPreferencias(language, portal, subtype, "", ""));
+
+    } catch (com.isban.wsclients.sanagrupadorpreferencias.FatwireErrorException fatwireExc) {
+      // Get error code and send the exception that corresponds
+      throw new WSAccessException(fatwireExc.getStackTrace().toString(), fatwireExc.getFaultInfo().getCodigo(), fatwireExc.getFaultInfo().getMensaje());
+    } catch (SecurityException securityEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(securityEx.getStackTrace().toString(), securityEx.getMessage(), securityEx.getMessage());
+    } catch (IllegalArgumentException illArgEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(illArgEx.getStackTrace().toString(), illArgEx.getMessage(), illArgEx.getMessage());
+    } catch (Exception defExc) {
+      // Get error code and send the exception that corresponds
+      throw new TechnicalException(defExc.getStackTrace().toString(), defExc.getCause().getMessage(), defExc.getCause().getMessage());
+    }
+
+    return results;
+
+  }
+
+
+  /**
+   * Gets a SanAgrupadorDetalle
+   * 
+   * @author IsBan
+   * @return list of multibars available
+   * @throws WSAccessException
+   * @throws TechnicalException
+   * @throws Exception
+   */
+  public static TipoAgrupadores getSanAgrupadorDetalle(String leng, String portal, String secure, String cid) throws WSAccessException, TechnicalException {
+
+    TipoAgrupadores object = new TipoAgrupadores();
+
+    try {
+      com.isban.wsclients.sanagrupadordetalle.AssetPortType portWS = (com.isban.wsclients.sanagrupadordetalle.AssetPortType) GenericUtils.getWS(com.isban.wsclients.sanagrupadordetalle.AssetService.class, com.isban.wsclients.sanagrupadordetalle.AssetPortType.class);
+
+      object = (TipoAgrupadores) GenericUtils.throwExceptionIfIsAnErrorClass(portWS.sanAgrupadorDetalle(leng, portal, cid, secure));
+    } catch (com.isban.wsclients.sanagrupadordetalle.FatwireErrorException fatwireExc) {
+      // Get error code and send the exception that corresponds
+      throw new WSAccessException(fatwireExc.getStackTrace().toString(), fatwireExc.getFaultInfo().getCodigo(), fatwireExc.getFaultInfo().getMensaje());
+    } catch (SecurityException securityEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(securityEx.getStackTrace().toString(), securityEx.getMessage(), securityEx.getMessage());
+    } catch (IllegalArgumentException illArgEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(illArgEx.getStackTrace().toString(), illArgEx.getMessage(), illArgEx.getMessage());
+    } catch (Exception defExc) {
+      // Get error code and send the exception that corresponds
+      throw new TechnicalException(defExc.getStackTrace().toString(), defExc.getCause().getMessage(), defExc.getCause().getMessage());
+    }
+    return object;
+  }
+
+  /**
+   * Gets a SanAgrupadorDetallePaginado
+   * 
+   * @author IsBan
+   * @return list of multibars available
+   * @throws WSAccessException
+   * @throws TechnicalException
+   * @throws Exception
+   */
+  public static TipoAgrupadoresPaginado getSanAgrupadorDetallePaginado(String leng, String portal, String secure, String cid, String pagina, String elementos) throws WSAccessException, TechnicalException {
+
+    TipoAgrupadoresPaginado object = new TipoAgrupadoresPaginado();
+
+    try {
+      com.isban.wsclients.sanagrupadordetallepaginado.AssetPortType portWS = (com.isban.wsclients.sanagrupadordetallepaginado.AssetPortType) GenericUtils.getWS(com.isban.wsclients.sanagrupadordetallepaginado.AssetService.class, com.isban.wsclients.sanagrupadordetallepaginado.AssetPortType.class);
+
+      object = (TipoAgrupadoresPaginado) GenericUtils.throwExceptionIfIsAnErrorClass(portWS.sanAgrupadorDetallePaginado(leng, portal, cid, secure, pagina, elementos, ""));
+    } catch (com.isban.wsclients.sanagrupadordetallepaginado.FatwireErrorException fatwireExc) {
+      // Get error code and send the exception that corresponds
+      throw new WSAccessException(fatwireExc.getStackTrace().toString(), fatwireExc.getFaultInfo().getCodigo(), fatwireExc.getFaultInfo().getMensaje());
+    } catch (SecurityException securityEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(securityEx.getStackTrace().toString(), securityEx.getMessage(), securityEx.getMessage());
+    } catch (IllegalArgumentException illArgEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(illArgEx.getStackTrace().toString(), illArgEx.getMessage(), illArgEx.getMessage());
+    } catch (Exception defExc) {
+      // Get error code and send the exception that corresponds
+      throw new TechnicalException(defExc.getStackTrace().toString(), defExc.getCause().getMessage(), defExc.getCause().getMessage());
+    }
+    return object;
+  }
+
+
+  /**
+   * Gets a SanAgrupadorDetallePaginado
+   * 
+   * @author IsBan
+   * @return list of multibars available
+   * @throws WSAccessException
+   * @throws TechnicalException
+   * @throws Exception
+   */
+  public static TipoAgrupadoresPaginadoDR getSanAgrupadorDetallePaginadoRestringido(String leng, String portal, String secure, String cid, String pagina, String elementos) throws WSAccessException, TechnicalException {
+
+    TipoAgrupadoresPaginadoDR object = new TipoAgrupadoresPaginadoDR();
+
+    try {
+      com.isban.wsclients.sanagrupadordetallepaginadorestringido.AssetPortType portWS = (com.isban.wsclients.sanagrupadordetallepaginadorestringido.AssetPortType) GenericUtils.getWS(com.isban.wsclients.sanagrupadordetallepaginadorestringido.AssetService.class, com.isban.wsclients.sanagrupadordetallepaginadorestringido.AssetPortType.class);
+
+      object = (TipoAgrupadoresPaginadoDR) GenericUtils.throwExceptionIfIsAnErrorClass(portWS.sanAgrupadorDetallePaginadoRestringido(leng, portal, cid, secure, pagina, elementos, ""));
+    } catch (com.isban.wsclients.sanagrupadordetallepaginadorestringido.FatwireErrorException fatwireExc) {
+      // Get error code and send the exception that corresponds
+      throw new WSAccessException(fatwireExc.getStackTrace().toString(), fatwireExc.getFaultInfo().getCodigo(), fatwireExc.getFaultInfo().getMensaje());
+    } catch (SecurityException securityEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(securityEx.getStackTrace().toString(), securityEx.getMessage(), securityEx.getMessage());
+    } catch (IllegalArgumentException illArgEx) {
+      // Get error code and send the exception that corresponds
+      throw new BadWSParametersException(illArgEx.getStackTrace().toString(), illArgEx.getMessage(), illArgEx.getMessage());
+    } catch (Exception defExc) {
+      // Get error code and send the exception that corresponds
+      throw new TechnicalException(defExc.getStackTrace().toString(), defExc.getCause().getMessage(), defExc.getCause().getMessage());
+    }
+    return object;
+  }
+
+
+}

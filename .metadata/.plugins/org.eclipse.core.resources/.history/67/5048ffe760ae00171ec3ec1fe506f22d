@@ -1,0 +1,763 @@
+package com.isban.p041buscadorcontenidos.views;
+
+import com.gruposantander.buscador.CampoAdicional;
+import com.gruposantander.buscador.ItemResultado;
+import com.gruposantander.buscador.ResultadoBusqueda;
+import com.gruposantander.buscador.constantes.CamposAdicionales;
+import com.isb.portlet.fw.annotation.PortletHandler;
+import com.isb.portlet.fw.annotation.PortletMode;
+import com.isb.portlet.fw.annotation.PortletState;
+import com.isb.portlet.fw.annotation.RenderHandler;
+import com.isb.portlet.fw.annotation.ResponseMode;
+import com.isb.portlet.fw.base.BaseRenderHandler;
+import com.isb.portlet.fw.base.FrameworkUtils;
+import com.isb.portlet.fw.base.LayoutInfo;
+import com.isb.portlet.fw.base.Scope;
+import com.isban.model.TipoParent;
+import com.isban.p041buscadorcontenidos.integration.P041BuscContenidosAutonomyServiceUtil;
+import com.isban.p041buscadorcontenidos.integration.P041BuscContenidosServiceUtil;
+import com.isban.p041buscadorcontenidos.keys.P041BuscContenidosConst;
+import com.isban.p041buscadorcontenidos.keys.P041BuscContenidosMessages;
+import com.isban.p041buscadorcontenidos.model.EntryBean;
+import com.isban.p041buscadorcontenidos.model.ItemResult;
+import com.isban.p041buscadorcontenidos.model.LRGrouperExt;
+import com.isban.p041buscadorcontenidos.model.P041BuscContenidosViewBean;
+import com.isban.p041buscadorcontenidos.model.SearchResult;
+import com.isban.p041buscadorcontenidos.utils.P041BuscContenidosUtils;
+import com.isban.portales.utilidades.commons.exceptions.technical.PropertyAccessException;
+import com.isban.portales.utilidades.commons.keys.GenericConstants;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+import com.isban.portales.utilidades.pagination.PaginationBean;
+import com.isban.portales.utilidades.pagination.PaginationFunctions;
+import com.liferay.portal.kernel.util.StringPool;
+
+import java.net.URLDecoder;
+import java.text.Collator;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.portlet.PortletException;
+import javax.portlet.PortletPreferences;
+
+import es.isban.portlets.exception.TechnicalErrorException;
+import es.isban.portlets.literals.api.LiteralUtil;
+import es.isban.portlets.util.PortalCommonUtil;
+
+/**
+ * The Class P041BuscContenidosRenderView.
+ */
+@PortletHandler
+public class P041BuscContenidosRenderView extends BaseRenderHandler {
+
+	private String prefValueTipo;
+	private String prefValueSubtipoLiteral;
+
+	@RenderHandler(view = P041BuscContenidosConst.RENDER_DEFAULT_VIEW, state = PortletState.DEFAULT)
+	public String defaultRenderView() throws Exception {
+
+		String prefValueDisplay = GenericUtils.getProperty(P041BuscContenidosConst.COMBOBOX_DISPLAY_ELEMENT_VALUE,
+				P041BuscContenidosConst.RESOURCE_BUNDLE_BASE_LOCATION, FrameworkUtils.getLocale());
+
+		String jspPage = P041BuscContenidosConst.PAGE_PREFIX_DISPLAY + prefValueDisplay
+				+ P041BuscContenidosConst.PAGE_JSP_EXTENSION;
+
+		return setRenderBean(jspPage);
+	}
+
+	@RenderHandler(view = P041BuscContenidosConst.RENDER_DEFAULT_VIEW, response = ResponseMode.AJAX, action = P041BuscContenidosConst.ACTION_PAGINATION, mode = PortletMode.VIEW, state = PortletState.DEFAULT)
+	public String paginadorDefaultView() throws Exception {
+		String jspPage = P041BuscContenidosConst.PAGE_DEFAULT_VIEW_AJAX;
+		setJSCallBack(P041BuscContenidosConst.JS_FUNCTION_PAGINATION);
+		return setRenderBean(jspPage);
+	}
+
+	@RenderHandler(view = P041BuscContenidosConst.RENDER_ERROR_VIEW)
+	public String errorRenderView() {
+		return P041BuscContenidosConst.PAGE_DEFAULT_ERROR;
+	}
+
+	/**
+	 * Construye el bean de visualizacion
+	 * 
+	 * @param jspPage
+	 * @return
+	 */
+	private String setRenderBean(String jspPage) {
+
+		try {
+
+			// Creacion bean respuesta
+			P041BuscContenidosViewBean defaultViewBean = new P041BuscContenidosViewBean();
+
+			// Resultados de busqueda
+			SearchResult searchResults = new SearchResult();
+
+			// Para literales gestionables
+			LiteralUtil literalUtils = new LiteralUtil();
+			String idPortlet = (String) this.getRequest().getAttribute("PORTLET_ID");
+
+			// Obtenemos preferencias
+			String prefValueDisplay = GenericUtils.getProperty(P041BuscContenidosConst.COMBOBOX_DISPLAY_ELEMENT_VALUE,
+					P041BuscContenidosConst.RESOURCE_BUNDLE_BASE_LOCATION, FrameworkUtils.getLocale());
+			prefValueTipo = P041BuscContenidosConst.COMBOBOX_TIPO_ELEMENT_VALUE;
+			prefValueSubtipoLiteral = StringPool.BLANK;
+			String prefValueSubtipo = P041BuscContenidosConst.COMBOBOX_SUBTIPO_ELEMENT_VALUE;
+			String prefValueCategoria = P041BuscContenidosConst.COMBOBOX_CATEGORIA_ELEMENT_VALUE;
+			boolean resaltado = true;
+			boolean sugerencia = true;
+			boolean paginador = true;
+			String numItemsPPagina = P041BuscContenidosConst.NUMERICAL_DEFAULT_VALUE_ELEMENTSPP;
+			String numIntervalos = P041BuscContenidosConst.NUMERICAL_DEFAULT_VALUE_INTERVALOS;
+
+			PortletPreferences prefs = FrameworkUtils.getPreferences();
+			if (prefs != null) {
+
+				// Valores de las preferencias
+				prefValueDisplay = prefs.getValue(P041BuscContenidosConst.LR_PREF_DISPLAY, prefValueDisplay);
+				prefValueTipo = prefs.getValue(P041BuscContenidosConst.LR_PREF_TIPO,
+						P041BuscContenidosConst.COMBOBOX_TIPO_ELEMENT_VALUE);
+
+				// No configurado
+				if (StringPool.BLANK.equals(prefValueTipo)) {
+					jspPage = P041BuscContenidosConst.PAGE_PREFIX_DISPLAY
+							+ P041BuscContenidosConst.PAGE_JSP_NO_PREFERENCES
+							+ P041BuscContenidosConst.PAGE_JSP_EXTENSION;
+					return jspPage;
+				}
+
+				prefValueSubtipo = prefs.getValue(P041BuscContenidosConst.LR_PREF_SUBTIPO,
+						P041BuscContenidosConst.COMBOBOX_SUBTIPO_ELEMENT_VALUE);
+
+				// comprobar todos y vacio
+				if (!StringPool.BLANK.equals(prefValueSubtipo) && !"0".equals(prefValueSubtipo)) {
+					prefValueSubtipoLiteral = getLiteralByCid(prefValueSubtipo);
+				} else {
+					prefValueSubtipo = StringPool.BLANK;
+				}
+
+				prefValueCategoria = prefs.getValue(P041BuscContenidosConst.LR_PREF_CATEGORIA,
+						P041BuscContenidosConst.COMBOBOX_CATEGORIA_ELEMENT_VALUE);
+				if ("-2".equals(prefValueCategoria)) {
+					prefValueCategoria = StringPool.BLANK;
+				}
+
+				String prefValueResaltado = prefs.getValue(P041BuscContenidosConst.LR_PREF_RESALTADO,
+						P041BuscContenidosConst.CHECKBOX_DEFAULT_VALUE_RESALTADO);
+				resaltado = String.valueOf(false).equals(prefValueResaltado) ? false : true;
+
+				String prefValueSugerencia = prefs.getValue(P041BuscContenidosConst.LR_PREF_SUGERENCIA,
+						P041BuscContenidosConst.CHECKBOX_DEFAULT_VALUE_SUGERENCIA);
+				sugerencia = String.valueOf(false).equals(prefValueSugerencia) ? false : true;
+
+				String prefValuePaginador = prefs.getValue(P041BuscContenidosConst.LR_PREF_PAGINADOR,
+						P041BuscContenidosConst.CHECKBOX_DEFAULT_VALUE_PAGINADOR);
+				paginador = String.valueOf(false).equals(prefValuePaginador) ? false : true;
+
+				numItemsPPagina = prefs.getValue(P041BuscContenidosConst.LR_PREF_ELEMENTSPP,
+						P041BuscContenidosConst.NUMERICAL_DEFAULT_VALUE_ELEMENTSPP);
+
+				numIntervalos = prefs.getValue(P041BuscContenidosConst.LR_PREF_INTERVALOS,
+						P041BuscContenidosConst.NUMERICAL_DEFAULT_VALUE_INTERVALOS);
+
+			} else {
+				jspPage = P041BuscContenidosConst.PAGE_PREFIX_DISPLAY + P041BuscContenidosConst.PAGE_JSP_NO_PREFERENCES
+						+ P041BuscContenidosConst.PAGE_JSP_EXTENSION;
+				return jspPage;
+			}
+
+			// Obtenemos items del combo categorias
+			if (!GenericUtils.isEmpty(prefValueCategoria) && !"-1".equals(prefValueCategoria)) {
+				getItemCategories(defaultViewBean, prefValueTipo, prefValueCategoria);
+			}
+
+			// Pagina actual
+			String currentPage = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_CURRENT_PAGE,
+					P041BuscContenidosConst.DEFAULT_NUM_PAGE);
+			searchResults.setCurrentPage(Integer.parseInt(currentPage));
+
+			// Terminos a buscar
+			getSearchParams(defaultViewBean);
+
+			// Si hay termino y/o categoria se hace busqueda, sino se obtienen
+			// las ultimas busquedas que tenga Liferay
+			if ((defaultViewBean.getTermino() != null && !StringPool.BLANK.equals(defaultViewBean.getTermino()))
+					|| (defaultViewBean.getCategoria() != null && !"-2".equals(defaultViewBean.getCategoria())
+							&& !StringPool.BLANK.equals(defaultViewBean.getCategoria()))) {
+
+				// Obtenemos parametros introducidos por el usuario
+				String sCategoria = StringPool.BLANK;
+				Date dateFrom = null;
+				Date dateTo = null;
+
+				// Se obtiene categoria
+				if (!P041BuscContenidosMessages.OPTION_SELECT_OPTION_VALUE.equals(defaultViewBean.getCategoria())) {
+					sCategoria = defaultViewBean.getCategoria();
+				}
+
+				// Formatea la fecha segun el pais
+				String formatDate = literalUtils.getLanguageLiteral(
+						P041BuscContenidosConst.RESOURCE_BUNDLE_BASE_LOCATION, idPortlet,
+						FrameworkUtils.getLocale().toString(), FrameworkUtils.getLayoutPlid(),
+						P041BuscContenidosConst.FORMAT_DATE_FORM);
+				SimpleDateFormat simpleDateFormat = new SimpleDateFormat(formatDate);
+
+				// Recupera fecha desde
+				if (!GenericUtils.isEmpty(defaultViewBean.getFromDate())) {
+					dateFrom = simpleDateFormat.parse(defaultViewBean.getFromDate());
+				}
+
+				// Recupera fecha hasta
+				if (!GenericUtils.isEmpty(defaultViewBean.getToDate())) {
+					dateTo = simpleDateFormat.parse(defaultViewBean.getToDate());
+				}
+
+				// Busqueda con Autonomy
+				ResultadoBusqueda result = P041BuscContenidosAutonomyServiceUtil.searcher(defaultViewBean.getTermino(),
+						sCategoria, dateFrom, dateTo, resaltado, sugerencia, paginador, Integer.parseInt(currentPage),
+						prefValueTipo, prefValueSubtipo);
+
+				// Opciones de resultados
+				searchResults.setPaginador(paginador);
+				searchResults.setResaltado(resaltado);
+				searchResults.setSugerencia(sugerencia);
+
+				// Obtenemos y organizamos resultados
+				searchResults = getResultsFromAutonomy(result, Integer.parseInt(currentPage), searchResults,
+						numItemsPPagina);
+				searchResults.setLiteralResultados(P041BuscContenidosConst.LITERAL_BUSQUEDA);
+				searchResults.setHistorico(false);
+
+				// Obtenemos jsp de visualizacion ajax
+				jspPage = P041BuscContenidosConst.PAGE_DEFAULT_VIEW_AJAX;
+				setJSCallBack(P041BuscContenidosConst.JS_FUNCTION_PAGINATION);
+
+			} else {
+				String paginaOpt = StringPool.BLANK;
+				String elementosOpt = numItemsPPagina;
+				if (paginador) {
+					paginaOpt = currentPage + StringPool.BLANK;
+				}
+				String subtipo = prefValueSubtipo;
+
+				// Opciones de resultados
+				searchResults.setPaginador(paginador);
+				searchResults.setResaltado(resaltado);
+				searchResults.setSugerencia(sugerencia);
+
+				// Recuperamos todos los resultados
+				List<LRGrouperExt> resultList = P041BuscContenidosServiceUtil.getLastSearches(getCurrentSite(),
+						prefValueTipo.replace(StringPool.SPACE, StringPool.BLANK),
+						subtipo.replace(StringPool.SPACE, StringPool.BLANK), paginaOpt, elementosOpt,
+						P041BuscContenidosConst.AUTONOMY_ORDER_DESC, PortalCommonUtil.getThemeDisplay(getRequest()));
+
+				// Obtenemos y organizamos resultados
+				searchResults = getResultsFromLR(searchResults, resultList, prefValueTipo, numItemsPPagina);
+				searchResults.setLiteralResultados(getLiteralHistorico(prefValueSubtipoLiteral));
+				searchResults.setHistorico(true);
+
+			}
+
+			// Recupera el mobile mode
+			boolean mobileMode = prefs
+					.getValue(P041BuscContenidosConst.PREFS_SHOWRESPONSIVE, GenericConstants.CTE_EMPTY)
+					.equalsIgnoreCase(GenericConstants.CTE_TRUE);
+			if (Boolean.valueOf(mobileMode)) {
+				defaultViewBean.setCheckMobileMode(GenericConstants.CTE_TRUE_LOW);
+			} else {
+				defaultViewBean.setCheckMobileMode(GenericConstants.CTE_FALSE_LOW);
+			}
+
+			// Pagination Bean
+			if (searchResults.getNumResultTotal() != null) {
+				searchResults = getPagerConfig(searchResults, numIntervalos, currentPage);
+			}
+			defaultViewBean.setSearchResults(searchResults);
+
+			String userId = StringPool.BLANK;
+			try {
+				userId = FrameworkUtils.getUID();
+			} catch (PortletException exc) {
+				FrameworkUtils.getLogger().error("Error getting UserId");
+				FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(exc));
+			}
+
+			defaultViewBean.setUserId(userId);
+
+			defaultViewBean.setLinkableWidgetHidden(P041BuscContenidosConst.LINKABLE_WIDGET_HIDDEN);
+			defaultViewBean.setLinkableHiddenEventName(P041BuscContenidosConst.LINKABLE_EVENT_NAME);
+
+			String formatDate = literalUtils.getLanguageLiteral(P041BuscContenidosConst.RESOURCE_BUNDLE_BASE_LOCATION,
+					idPortlet, FrameworkUtils.getLocale().toString(), FrameworkUtils.getLayoutPlid(),
+					P041BuscContenidosConst.FORMAT_DATE_FORM);
+			defaultViewBean.setDateFormat(formatDate);
+			defaultViewBean.setTipoElementos(prefValueTipo);
+
+			setModelData(Scope.REQUEST, P041BuscContenidosConst.BEANID_REQUEST_DATA, defaultViewBean);
+
+		} catch (Exception e) {
+			return GenericUtils.redirectToErrorHandlerPageAndSendErrorBean(e, "Error", e.getMessage(),
+					P041BuscContenidosConst.PAGE_DEFAULT_ERROR);
+		}
+
+		return jspPage;
+	}
+
+	/**
+	 * Devuelve los parametros de busqueda
+	 * 
+	 * @param bcViewBean
+	 */
+	private void getSearchParams(P041BuscContenidosViewBean bcViewBean) {
+
+		try {
+
+			// Se obtiene el termino de busqueda
+			String paramTermino = StringPool.BLANK;
+			String paramText = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_TERMINO_VALUE);
+			String paramTextHidden = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_TERMINO_HIDDEN_VALUE);
+
+			if (!GenericUtils.isEmpty(paramTextHidden)) {
+				paramTermino = URLDecoder.decode(paramTextHidden, "UTF-8");
+			} else if (!GenericUtils.isEmpty(paramText)) {
+				paramTermino = URLDecoder.decode(paramText, "UTF-8");
+			}
+
+			// Se obtiene categoria
+			String paramCategoria = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_CATEGORIA_VALUE);
+
+			// Se obtiene fecha desde
+			String paramFromDate = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_FROMDATE_VALUE);
+
+			// Se obtiene fecha hasta
+			String paramToDate = getModelData(Scope.REQUEST, P041BuscContenidosConst.PARAM_TODATE_VALUE);
+
+			// Guardamos valores a buscar
+			bcViewBean.setTermino(paramTermino);
+			bcViewBean.setCategoria(paramCategoria);
+			bcViewBean.setFromDate(paramFromDate);
+			bcViewBean.setToDate(paramToDate);
+
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error("Error getting form parameters");
+			FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(e));
+		}
+	}
+
+	/**
+	 * Devuelve las categorías del vocabulario
+	 * 
+	 * @param bcViewBean
+	 * @param prefValueTipo
+	 * @param prefValueCategoria
+	 */
+	private void getItemCategories(P041BuscContenidosViewBean bcViewBean, String prefValueTipo,
+			String prefValueCategoria) {
+
+		// Se obtiene un Collator adecuado para nuestro idioma.
+		final Collator comparador = Collator.getInstance();
+
+		// Se configura para que normalizar caracteres
+		comparador.setStrength(Collator.PRIMARY);
+
+		try {
+			if (!GenericUtils.isEmpty(prefValueTipo) && !GenericUtils.isEmpty(prefValueCategoria)) {
+
+				// Recupera las categorias
+				List<TipoParent> parentCatList = P041BuscContenidosServiceUtil.getCategories(prefValueTipo,
+						prefValueCategoria);
+				if (!GenericUtils.isEmpty(parentCatList)) {
+					List<EntryBean> categoriesList = new ArrayList<EntryBean>();
+
+					// Guarda cada categoria en el listado
+					for (TipoParent cat : parentCatList) {
+						categoriesList.add(new EntryBean(cat.getTitulo(), cat.getCid()));
+					}
+
+					// Ordena el listado de categorias por nombre
+					if (!GenericUtils.isEmpty(categoriesList)) {
+						Collections.sort(categoriesList, new Comparator<EntryBean>() {
+							public int compare(EntryBean p1, EntryBean p2) {
+								return new Integer(comparador.compare(p1.getName(), p2.getName()));
+							}
+						});
+						bcViewBean.setLstCategorias(categoriesList);
+					}
+				}
+			}
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error("Error getting select options categories from Liferay ");
+			FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(e));
+		}
+
+	}
+
+	/**
+	 * Devuelve resultados de busqueda de Autonomy
+	 * 
+	 * @param result
+	 * @param currentPage
+	 * @param searchResults
+	 * @param numItemsPPagina
+	 * @return
+	 */
+	private SearchResult getResultsFromAutonomy(ResultadoBusqueda result, int currentPage, SearchResult searchResults,
+			String numItemsPPagina) {
+
+		try {
+
+			// Para literales gestionables
+			LiteralUtil literalUtils = new LiteralUtil();
+			String idPortlet = (String) this.getRequest().getAttribute("PORTLET_ID");
+
+			if (result != null && result.getOkBusqueda()) {
+
+				// Obtenemos respuesta
+				searchResults.setNumResultTotal(result.getNumeroItemsTotal());
+
+				FrameworkUtils.getLogger().info("Autonomy getNumeroItemsTotal [" + result.getNumeroItemsTotal() + "]");
+
+				if (searchResults.isPaginador()) {
+					searchResults.setElementsPage(Integer.parseInt(numItemsPPagina));
+				} else {
+					searchResults.setElementsPage(searchResults.getNumResultTotal());
+				}
+
+				FrameworkUtils.getLogger().info("Autonomy getElementsPage [" + searchResults.getElementsPage() + "]");
+
+				searchResults.setCurrentPage(currentPage);
+				searchResults.setNumPages(P041BuscContenidosUtils.getNumPages(result.getNumeroItemsResultado(),
+						result.getNumeroItemsTotal()));
+
+				ItemResultado[] items = (ItemResultado[]) result.getItemsResultado();
+				if (items != null && items.length > 0) {
+
+					List<ItemResult> lstItemsResult = new ArrayList<ItemResult>();
+					for (int i = 0; i < items.length; i++) {
+
+						// Obtenemos info de Item a Bean de Item
+						ItemResult itemResult = new ItemResult();
+
+						// CID
+						// itemResult.setCid(items[i].getId());
+
+						// Titulo
+						itemResult.setTitulo(items[i].getTitulo());
+
+						// Texto
+						// itemResult.setTexto(items[i].getResumen());
+
+						// Link
+						itemResult.setLink(items[i].getReferencia());
+
+						// Escapa espacios
+						prefValueSubtipoLiteral = prefValueSubtipoLiteral.replace(StringPool.SPACE, StringPool.BLANK);
+						prefValueTipo = prefValueTipo.replace(StringPool.SPACE, StringPool.BLANK);
+
+						FrameworkUtils.getLogger()
+								.info("Tipo [" + prefValueTipo + "] - Subtipo[" + prefValueSubtipoLiteral + "]");
+
+						itemResult.setTipo(prefValueTipo);
+						itemResult.setSubtipo(prefValueSubtipoLiteral);
+
+						// Campos Adicionales
+						CampoAdicional[] arrCampoAdic = items[i].getCamposAdicionales();
+						if (arrCampoAdic != null) {
+							for (int j = 0; j < arrCampoAdic.length; j++) {
+								String sCampo = arrCampoAdic[j].getCampo();
+								if (CamposAdicionales.FECHA.equals(sCampo)) {
+
+									// Fecha
+									String formatDate = literalUtils.getLanguageLiteral(
+											P041BuscContenidosConst.RESOURCE_BUNDLE_BASE_LOCATION, idPortlet,
+											FrameworkUtils.getLocale().toString(), FrameworkUtils.getLayoutPlid(),
+											P041BuscContenidosConst.FORMAT_DATE_FORM);
+									String sFecha = P041BuscContenidosUtils
+											.setFechaFormateada(arrCampoAdic[j].getValor(), formatDate);
+
+									itemResult.setFecha(sFecha);
+
+								} else if (CamposAdicionales.VALORACION.equals(sCampo)) {
+									// Valoracion
+									itemResult.setValoracion(
+											arrCampoAdic[j].getValor() != null ? arrCampoAdic[j].getValor() : "0");
+								} else if (CamposAdicionales.RESUMEN.equals(sCampo)) {
+									// Resumen
+									itemResult.setTexto(arrCampoAdic[j].getValor() != null ? arrCampoAdic[j].getValor()
+											: StringPool.BLANK);
+								} else if (CamposAdicionales.CODIGO.equals(sCampo)) {
+									// CID
+									itemResult.setCid(arrCampoAdic[j].getValor() != null ? arrCampoAdic[j].getValor()
+											: StringPool.BLANK);
+								} else if (CamposAdicionales.TIPO.equals(sCampo)) {
+									// Tipo
+									itemResult.setTipo(arrCampoAdic[j].getValor() != null ? arrCampoAdic[j].getValor()
+											: prefValueTipo);
+								} else if (CamposAdicionales.SUB_TIPO.equals(sCampo)) {
+									// Subtipo
+									itemResult.setSubtipo(arrCampoAdic[j].getValor() != null
+											? arrCampoAdic[j].getValor() : prefValueSubtipoLiteral);
+								}
+							}
+						}
+						lstItemsResult.add(itemResult);
+					}
+
+					searchResults.setItems(lstItemsResult);
+					FrameworkUtils.getLogger()
+							.info("Autonomy lstItemsResult [" + searchResults.getItems().size() + "]");
+
+				} else {
+					searchResults.setSuggestion(result.getSugerenciaOrtografica());
+				}
+
+			}
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+			return null;
+		}
+
+		return searchResults;
+
+	}
+
+	/**
+	 * Devuelve resultados de busqueda en Liferay
+	 * 
+	 * @param searchResult
+	 * @param resultsList
+	 * @param tipo
+	 * @param numItemsPPagina
+	 * @return
+	 */
+	private SearchResult getResultsFromLR(SearchResult searchResult, List<LRGrouperExt> resultsList, String tipo,
+			String numItemsPPagina) {
+
+		try {
+			if (resultsList != null && !resultsList.isEmpty()) {
+
+				searchResult.setNumResultTotal(resultsList.size());
+				if (searchResult.isPaginador()) {
+					searchResult.setElementsPage(Integer.parseInt(numItemsPPagina));
+				} else {
+					searchResult.setElementsPage(searchResult.getNumResultTotal());
+				}
+				searchResult.setNumPages(P041BuscContenidosUtils.getNumPages(searchResult.getElementsPage(),
+						searchResult.getNumResultTotal()));
+
+				List<ItemResult> lstItemsResult = new ArrayList<ItemResult>();
+				tipo = tipo.replace(StringPool.SPACE, StringPool.BLANK);
+
+				for (LRGrouperExt item : resultsList) {
+					ItemResult itemResult = new ItemResult();
+					itemResult.setTitulo(item.getTituloVisual());
+					itemResult.setTexto(item.getEntradilla());
+					itemResult.setFecha(item.getFechaFormated(FrameworkUtils.getLocale().toString()));
+					itemResult.setTooltip(item.getTooltip());
+
+					// Asigna el link
+
+					if (P041BuscContenidosConst.DETAILS_PAGE.equals(item.getTitulo())) {
+						itemResult.setLink(getFriendlyUrl(item.getUrlTitle(), tipo, item.getSubtipo()));
+						itemResult.setDetailLink(true);
+					} else {
+						itemResult.setLink(item.getTitulo());
+						itemResult.setDetailLink(false);
+					}
+
+					itemResult.setTarget(item.getTarget());
+					itemResult.setIndexacion(item.getIndexacion());
+					itemResult.setCid(item.getArticleID());
+					itemResult.setUrlTitle(item.getUrlTitle());
+					itemResult.setTipo(tipo);
+					itemResult.setSubtipo(item.getSubtipo());
+					itemResult.setAnalitica(item.getAnalitica());
+					lstItemsResult.add(itemResult);
+				}
+				searchResult.setItems(lstItemsResult);
+			}
+
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+		}
+
+		return searchResult;
+
+	}
+
+	/**
+	 * Devuelve el literal del subtipo de LRInformation
+	 * 
+	 * @param literal
+	 * @return
+	 */
+	private String getLiteralHistorico(String literal) {
+
+		String cadenaHist = P041BuscContenidosConst.LITERAL_HIST_DEFAULT;
+
+		if (literal.contains("Noticia")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_NOTICIAS;
+			return cadenaHist;
+		}
+		if (literal.contains("Campanya")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_CAMPANIA;
+			return cadenaHist;
+		}
+		if (literal.contains("PreguntaFrecuente")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_PREG_FREC;
+			return cadenaHist;
+		}
+		if (literal.contains("InformacionGeneral")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_INFO_GEN;
+			return cadenaHist;
+		}
+		if (literal.contains("Destacado")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_DESTACADAS;
+			return cadenaHist;
+		}
+		if (literal.contains("Glosario")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_GLOSARIO;
+			return cadenaHist;
+		}
+		if (literal.contains("Aviso")) {
+			cadenaHist = P041BuscContenidosConst.LITERAL_HIST_NOTIFIC;
+			return cadenaHist;
+		}
+		return cadenaHist;
+	}
+
+	private String getLiteralByCid(String subtipo) {
+		String literal = P041BuscContenidosConst.LITERAL_SUBTIPO_DEFAULT;
+
+		if (subtipo.contains("Noticia")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_NOTICIAS;
+			return literal;
+		}
+		if (subtipo.contains("Campanya")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_CAMPANIA;
+			return literal;
+		}
+		if (subtipo.contains("PreguntaFrecuente")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_PREG_FREC;
+			return literal;
+		}
+		if (subtipo.contains("InformacionGeneral")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_INFO_GEN;
+			return literal;
+		}
+		if (subtipo.contains("Destacado")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_DESTACADAS;
+			return literal;
+		}
+		if (subtipo.contains("Glosario")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_GLOSARIO;
+			return literal;
+		}
+		if (subtipo.contains("Aviso")) {
+			literal = P041BuscContenidosConst.LITERAL_SUBTIPO_NOTIFIC;
+			return literal;
+		}
+		return literal;
+	}
+
+	/**
+	 * Returns detail link from page custom fields
+	 * 
+	 * @param urlTitle
+	 * @param subtype
+	 * @return
+	 * @throws PropertyAccessException
+	 * @throws PortletException
+	 */
+	private String getFriendlyUrl(String urlTitle, String tipo, String subtype)
+			throws PropertyAccessException, PortletException {
+
+		String friendlyUrl = StringPool.BLANK;
+		List<LayoutInfo> listLayouts;
+		Map<String, String> mapOfCustomFields = new HashMap<String, String>();
+
+		// Busca las paginas con custom field id
+		List<LayoutInfo> listOfPages = getLayoutsByCustomField(P041BuscContenidosConst.CUSTOM_FIELD_ID, urlTitle);
+		if (!listOfPages.isEmpty()) {
+			friendlyUrl = listOfPages.get(0).getUrl();
+		} else {
+			// Busca las paginas con custom fields tipo/subtipo
+			mapOfCustomFields.put(P041BuscContenidosConst.CUSTOMFIELD_TYPE, tipo);
+			mapOfCustomFields.put(P041BuscContenidosConst.CUSTOMFIELD_SUBTYPE, subtype);
+			listLayouts = getLayoutsByCustomFields(mapOfCustomFields);
+			if (!listLayouts.isEmpty()) {
+				friendlyUrl = listLayouts.get(0).getUrl();
+			} else {
+				// Busca las paginas con custom field tipo
+				Map<String, String> mapOfCustomField = new HashMap<String, String>();
+				mapOfCustomField.put(P041BuscContenidosConst.CUSTOMFIELD_TYPE, tipo);
+				mapOfCustomField.put(P041BuscContenidosConst.CUSTOMFIELD_SUBTYPE, GenericConstants.CTE_EMPTY);
+				listLayouts = getLayoutsByCustomFields(mapOfCustomField);
+				if (!listLayouts.isEmpty()) {
+					friendlyUrl = listLayouts.get(0).getUrl();
+				}
+			}
+		}
+		return friendlyUrl;
+	}
+
+	/**
+	 * Devuelve la config del paginador
+	 * 
+	 * @param searchResults
+	 * @param numIntervalos
+	 * @param currentPage
+	 * @return
+	 */
+	private SearchResult getPagerConfig(SearchResult searchResults, String numIntervalos, String currentPage) {
+
+		int iniResult = 1;
+		int finResult = 2;
+		if (searchResults.getItems() != null && searchResults.isPaginador()) {
+			PortletPreferences paginationPrefs;
+			try {
+				paginationPrefs = FrameworkUtils.getPreferences();
+			} catch (TechnicalErrorException e) {
+				FrameworkUtils.getLogger().error(e.getMessage(), e);
+				paginationPrefs = null;
+			}
+
+			PaginationBean paginationBean = PaginationFunctions.sendPaginationObject(paginationPrefs,
+					searchResults.getNumResultTotal().toString(), currentPage,
+					searchResults.getElementsPage().toString());
+
+			paginationBean.setIntervalos(numIntervalos);
+			searchResults.setPagination(paginationBean);
+
+			if (searchResults.isHistorico()) {
+				int fromIndex = (Integer.parseInt(currentPage) - 1) * (searchResults.getElementsPage());
+				int toIndex = (Integer.parseInt(currentPage) * searchResults.getElementsPage()) - 1;
+				int lastIndex = (searchResults.getNumResultTotal() - 1) > toIndex ? toIndex
+						: searchResults.getNumResultTotal() - 1;
+				searchResults.setItems(searchResults.getItems().subList(fromIndex, lastIndex + 1));
+			}
+
+			iniResult = 1 + (searchResults.getElementsPage() * Integer.parseInt(currentPage)
+					- searchResults.getElementsPage());
+			finResult = searchResults.getElementsPage() * Integer.parseInt(currentPage);
+
+			if (finResult > searchResults.getNumResultTotal()) {
+				finResult = searchResults.getNumResultTotal();
+			}
+
+			searchResults.setIniResult(iniResult);
+			searchResults.setEndResult(finResult);
+
+		} else {
+			searchResults.setIniResult(iniResult);
+			searchResults.setEndResult(searchResults.getNumResultTotal());
+		}
+		return searchResults;
+	}
+
+}

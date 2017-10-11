@@ -1,0 +1,128 @@
+<%@page import="com.isban.p073enlacesconfusuario.keys.P073EnlacesConfUsuarioKey"%>
+<%@include file="../commons/init.jsp" %>
+
+<c:set var="bean" value="${initReq}" />
+<c:set var="keys" value="${bean.keys}"/>
+
+<ipf:view>
+
+<isb-datatag:divContainer isMain="false">
+
+	<ipf:actionURL var="switchUserFoldPref" action="userFoldAjaxAction"></ipf:actionURL>
+	<input type="hidden" id="<portlet:namespace />urlActionFold" value="${switchUserFoldPref}" />
+ 	<div class="wmaincont01 wlr_links_21">
+		<div class="wcont01">
+			<div class="textstd edit">
+				<p>${bean.body}</p>
+			</div>
+			<div class="wcontcollap01">
+				<c:set var="dropClass" value=""/>
+				<c:if test='${userFoldState eq "0" }'>
+					<c:set var="dropClass" value="collapsed"/>
+				</c:if>		
+				<div class="wtabs03" tabindex="0">
+					<a href="javascript:{}" onclick="moduloModal.modalISBAN('<portlet:namespace/>custom_links_view','modalhtml')" target="_self" title="<fmt:message key="073EnlacesConf.Configuracion" bundle="${lang}"/>">
+						<span class="configButton" data-modal-id="<portlet:namespace/>custom_links_view"></span>
+					</a>
+					<div class="clickableTab ${dropClass}">
+						<p class="tit02p" role="heading" aria-label="${bean.title}">${bean.title}</p>
+					</div>
+				</div>
+				<div class="wblockcollap01 ${dropClass}"><!--El contenido de este div se recarga con petición ajax-->
+					<div class="wrap_det01" id="widget_id_panel"><!--El contenido de este div se recarga con petición ajax-->
+						<div class="wblock_det02">
+							<div class="wblockclfx">
+							
+								<c:choose>
+								<c:when test="${ fn:length(bean.linksUser)>0 }">
+									<div class="wblk01 wcols2">
+										<ul class="wlista01">									
+									       	<c:forEach items="${bean.linksUser}" var="link">
+											<li>
+									   			<isb-datatag:textLink 
+															linkValue="${link.titulo}" 
+															linkUrl="${link.url==''?'#':link.url}" 
+															linkTitle="${link.tooltip}" 
+															linkTarget="${link.target eq 'SI'?'_blank':'_self'}" 
+															linkIndex="${link.indexacion}" 
+															cid="${link.cid}"
+															contentType="SANStructure>Link"
+															mainContent="SANAgrupador>Enlace"
+															linkCategory="Link"
+															visualUnit="WLR_links_21"
+															datosAnalitica="${link.analitica}" >
+												</isb-datatag:textLink>							
+											</li>
+											</c:forEach>
+										</ul>
+									</div>
+								</c:when>
+								<c:otherwise>
+									<div class="textstd02 edit">
+										<p><fmt:message key="073EnlacesConf.SinEnlaces" bundle="${lang}"/></p>
+									</div>							
+								</c:otherwise>							
+								</c:choose>
+								
+							</div>
+						</div>	
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+  
+	<ipf:actionURL var="customizeLinksAction" action="<%= P073EnlacesConfUsuarioKey.ACTION_CUSTOMIZE_LINKS %>"></ipf:actionURL>
+	<input type="hidden" id="<portlet:namespace />urlCustomizeLinks" value="${customizeLinksAction}" />  
+	<!-- Contenido de la modal -->
+	<div class="modal-content portlet-body wform04" id="<portlet:namespace/>custom_links_view"> 
+		<p class="cont_button">
+			<button class="btn_close" type="button" onclick="moduloModal.mClose()"><fmt:message key="073EnlacesConf.Cerrar" bundle="${lang}"/></button>
+		</p> 
+		<h3 class="titDestacado">${bean.subtitle}</h3>
+		<div class="textstd02">
+			<p>${bean.summary}</p>
+		</div>
+		<div class="wblkTable">
+			<div class="wblkcol50_2">
+				<h4 class="tit05"><fmt:message key="073EnlacesConf.EnlacesDisponibles" bundle="${lang}"/></h4>
+				<ul class="selectionList">
+			       	<c:forEach items="${bean.linksAvailable}" var="link" varStatus="status">
+					<li>
+						<input id="id0${status.count}" type="checkbox" value="${link.cid}" />
+						<label for="id0${status.count}" tabindex="0">${link.titulo}</label>
+					</li>
+					</c:forEach>
+				</ul>
+			</div>
+			<div class="buttonsColumn">
+				<div class="halfColumnResponsiveWrapper">
+					<span title="<fmt:message key="073EnlacesConf.Anadir" bundle="${lang}"/>" class="addBtn disabled" tabindex="0"></span>
+				</div>
+				<div class="halfColumnResponsiveWrapper">
+					<span title="<fmt:message key="073EnlacesConf.Eliminar" bundle="${lang}"/>" class="rmvBtn disabled" tabindex="0"></span>				
+				</div>
+			</div>
+			<div class="wblkcol50_2">
+				<h4 class="tit05"><fmt:message key="073EnlacesConf.EnlacesSeleccionados" bundle="${lang}"/></h4>
+				<ul class="selectionList">
+			       	<c:forEach items="${bean.linksUser}" var="linkFav" varStatus="status">
+					<li>
+						<input id="id1${status.count}" type="checkbox" value="${linkFav.cid}" />
+						<label for="id1${status.count}" tabindex="0">${linkFav.titulo}</label>
+					</li>
+					</c:forEach>
+				</ul>
+			</div>
+		</div>
+		<div class="botonera01">
+			<input type="button" class="button01" value="<fmt:message key="073EnlacesConf.GuardarConf" bundle="${lang}"/>" name="xxx" id="xxx" onclick="moduloModal.mClose()">
+			<input type="button" class="button02" value="<fmt:message key="073EnlacesConf.Cancelar" bundle="${lang}"/>" name="xxx" id="xxx" onclick="moduloModal.mClose()">
+		</div>	
+	</div>
+	<!-- Fin del contenido de la modal -->
+
+  
+</isb-datatag:divContainer>
+  
+</ipf:view>

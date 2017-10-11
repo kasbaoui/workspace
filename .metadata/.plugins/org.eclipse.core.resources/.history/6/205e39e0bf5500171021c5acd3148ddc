@@ -1,0 +1,246 @@
+package com.isban.p064informclustergroupalphabetical.views;
+
+import com.isb.portlet.fw.annotation.PortletHandler;
+import com.isb.portlet.fw.annotation.PortletMode;
+import com.isb.portlet.fw.annotation.PortletState;
+import com.isb.portlet.fw.annotation.RenderHandler;
+import com.isb.portlet.fw.annotation.ResponseMode;
+import com.isb.portlet.fw.base.BaseRenderHandler;
+import com.isb.portlet.fw.base.FrameworkUtils;
+import com.isb.portlet.fw.base.Scope;
+import com.isban.model.TipoAgrupadorPreferencia;
+import com.isban.model.TipoAgrupadorPreferencias;
+import com.isban.p064informclustergroupalphabetical.keys.P064InfoClusterGroupAlphabeticalKey;
+import com.isban.p064informclustergroupalphabetical.model.PreferencesBean;
+import com.isban.portales.utilidades.commons.keys.GenericConstants;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+import com.isban.portales.utilidades.editors.EntryEditor;
+import com.isban.portales.utilidades.editors.RichCombo;
+
+import es.isban.portlets.exception.TechnicalErrorException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import javax.portlet.PortletException;
+import javax.portlet.PortletPreferences;
+
+
+/**
+ * Default render class for EDIT mode
+ * 
+ * @author IsBan
+ * 
+ */
+@PortletHandler
+public class P064InfoClusterGroupAlphabeticalEditView extends BaseRenderHandler {
+
+  /**
+   * Default render method for EDIT mode
+   * 
+   * @return
+   */
+  @RenderHandler(view = P064InfoClusterGroupAlphabeticalKey.RENDER_P064INFOCLUSTERGROUPALPHABETICAL_EDIT, mode = PortletMode.EDIT)
+  public String editViewDefault() {
+
+    String targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_EDIT;
+
+    try {
+
+      PortletPreferences prefs = FrameworkUtils.getPreferences();
+
+      PreferencesBean prefBean = new PreferencesBean();
+
+      // Alertas de exito/error
+      prefBean.setSuccesfulSavedPreferences(FrameworkUtils.getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.MSG_SAVESUCCESFULPREFERENCES, GenericConstants.CTE_EMPTY));
+      prefBean.setErrorMessagePreferences(FrameworkUtils.getModelData(Scope.REQUEST, GenericConstants.MSG_ERRORPREFERENCES, GenericConstants.CTE_EMPTY));
+      prefBean.setErrorEmptyMandatoryPreferences(FrameworkUtils.getModelData(Scope.REQUEST, GenericConstants.MSG_ALLMANDATORYPREFS_NOTFILLED, GenericConstants.CTE_EMPTY));
+
+      // Unidad Visual
+      prefBean.setVisual(prefs.getValue(P064InfoClusterGroupAlphabeticalKey.PREF_VISUAL, GenericConstants.CTE_EMPTY));
+
+      
+      // RICHCOMBO ICONOSNOTIFICACIONES
+      FrameworkUtils.setModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_RICH_COMBO_AGRUP_BEAN, getRichComboBeanAgrup());
+
+      // RICHCOMBO ENLACESNOTIFICACION
+      FrameworkUtils.setModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_RICH_COMBO_BARRA_BEAN, getRichComboBeanBarra());
+
+      // Send bean to JSP
+      FrameworkUtils.setModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_BEAN_PREF, prefBean);
+
+
+    } catch (Exception e) {
+      FrameworkUtils.getLogger().error(e.getMessage(),e);
+      targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_ERROR;
+    }
+
+    return targetPage;
+  }
+
+  private RichCombo getRichComboBeanAgrup() throws PortletException, TechnicalErrorException {
+    PortletPreferences preferences = FrameworkUtils.getPreferences();
+    RichCombo richComboBean = new RichCombo();
+
+    richComboBean.setBundleEditor(P064InfoClusterGroupAlphabeticalKey.BUNDLE_EDITORS);
+    richComboBean.setLabelKey(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_LABEL_KEY);
+    richComboBean.setSelectId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_ID);
+    richComboBean.setSelectActionId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_ACTION_ID);
+    richComboBean.setInputId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_INPUT_ID);
+    richComboBean.setActionRichCombo(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_ACTION);
+
+    String prefSelectValueRichCombo = preferences.getValue(P064InfoClusterGroupAlphabeticalKey.LR_PREF_SELECT_VALUE_RICH_COMBO_AGRUP, P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_DEFAULT);
+    richComboBean.setSelectDefault(prefSelectValueRichCombo);
+
+    String prefParam1RichCombo = preferences.getValue(P064InfoClusterGroupAlphabeticalKey.LR_PREF_PARAM_VALUE_RICH_COMBO_AGRUP, "");
+    if (P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_COMBO_OPTION_VALUE.equals(prefSelectValueRichCombo)) {
+      richComboBean.setSelectActionDefault(prefParam1RichCombo);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+    } else if (P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_INPUT_OPTION_VALUE.equals(prefSelectValueRichCombo)) {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+    } else if (!prefParam1RichCombo.trim().isEmpty()) {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+      richComboBean.setSelectDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_INPUT_OPTION_VALUE);
+    } else {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_AGRUP_INPUT_DEFAULT);
+    }
+
+    return richComboBean;
+  }
+
+  /**
+   * Event view agrups.
+   *
+   * @return the string
+   * @throws IOException Signals that an I/O exception has occurred.
+   * @throws PortletException the portlet exception
+   * @throws TechnicalErrorException the technical error exception
+   */
+  @RenderHandler(view = P064InfoClusterGroupAlphabeticalKey.RENDER_P064INFOCLUSTERGROUPALPHABETICAL_EDIT, mode = PortletMode.EDIT, action = P064InfoClusterGroupAlphabeticalKey.ACTION_GET_AGRUPS, state = PortletState.DEFAULT, response = ResponseMode.AJAX)
+  public String eventViewAgrups() throws IOException, PortletException, TechnicalErrorException {
+    // PortletPreferences preferences = FrameworkUtils.getPreferences();
+
+    HashMap<String, Object> data = new HashMap<String, Object>();
+    try {
+      // Inicializamos valores
+      List<EntryEditor> lstselectData = new ArrayList<EntryEditor>();
+
+      // Insertamos datos de identificacion de select
+      String defaultActionSelect = (String) getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.DEFAULT_VALUE_ID_RC_ACTION_SELECT);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_ID, defaultActionSelect);
+
+      String defaultValueSelectAction = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.DEFAULT_VALUE_ACTION);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_ACTION_SELECT_DEFAULT, defaultValueSelectAction);
+
+      String defaultValueSelect = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_DEFAULT_RICH_COMBO_AGRUP_SELECT);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_DEFAULT, defaultValueSelect);
+
+      // Comprobamos si la acci�n fue correcta
+      String stAction = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_STATUS_ACTION, "");
+      if (!GenericUtils.isEmpty(stAction) && P064InfoClusterGroupAlphabeticalKey.OK.equals(stAction)) {
+
+        TipoAgrupadorPreferencias agrupTipoPrefs = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.BEANID_TIPO_PREF_DATA, new TipoAgrupadorPreferencias());
+
+        if (agrupTipoPrefs.getPreferencia() != null) {
+          for (TipoAgrupadorPreferencia tipoPref : agrupTipoPrefs.getPreferencia()) {
+            lstselectData.add(new EntryEditor(tipoPref.getName(), tipoPref.getId()));
+          }
+        }
+
+        data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_DATA, lstselectData);
+      }
+    } catch (Exception e) {
+    	FrameworkUtils.getLogger().error(e.getMessage(), e);
+      data.put(P064InfoClusterGroupAlphabeticalKey.PARAM_STATUS_ACTION, P064InfoClusterGroupAlphabeticalKey.ERR);
+    }
+    return sendJSONResponse(P064InfoClusterGroupAlphabeticalKey.JS_FUNCTION_SETOPTIONSELECT, data);
+  }
+
+
+  private RichCombo getRichComboBeanBarra() throws PortletException, TechnicalErrorException {
+    PortletPreferences preferences = FrameworkUtils.getPreferences();
+    RichCombo richComboBean = new RichCombo();
+
+    richComboBean.setBundleEditor(P064InfoClusterGroupAlphabeticalKey.BUNDLE_EDITORS);
+    richComboBean.setLabelKey(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_LABEL_KEY);
+    richComboBean.setSelectId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_ID);
+    richComboBean.setSelectActionId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_ACTION_ID);
+    richComboBean.setInputId(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_INPUT_ID);
+    richComboBean.setActionRichCombo(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_ACTION);
+
+    String prefSelectValueRichCombo = preferences.getValue(P064InfoClusterGroupAlphabeticalKey.LR_PREF_SELECT_VALUE_RICH_COMBO_BARRA, P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_DEFAULT);
+    richComboBean.setSelectDefault(prefSelectValueRichCombo);
+
+    String prefParam1RichCombo = preferences.getValue(P064InfoClusterGroupAlphabeticalKey.LR_PREF_PARAM_VALUE_RICH_COMBO_BARRA, "");
+    if (P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_COMBO_OPTION_VALUE.equals(prefSelectValueRichCombo)) {
+      richComboBean.setSelectActionDefault(prefParam1RichCombo);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+    } else if (P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_INPUT_OPTION_VALUE.equals(prefSelectValueRichCombo)) {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+    } else if (!prefParam1RichCombo.trim().isEmpty()) {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(prefParam1RichCombo);
+      richComboBean.setSelectDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_INPUT_OPTION_VALUE);
+    } else {
+      richComboBean.setSelectActionDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_SELECT_ACTION_DEFAULT);
+      richComboBean.setInputDefault(P064InfoClusterGroupAlphabeticalKey.RICHCOMBO_BARRA_INPUT_DEFAULT);
+    }
+
+    return richComboBean;
+  }
+
+  /**
+   * Event view barras.
+   *
+   * @return the string
+   * @throws IOException Signals that an I/O exception has occurred.
+   * @throws PortletException the portlet exception
+   * @throws TechnicalErrorException the technical error exception
+   */
+  @RenderHandler(view = P064InfoClusterGroupAlphabeticalKey.RENDER_P064INFOCLUSTERGROUPALPHABETICAL_EDIT, mode = PortletMode.EDIT, action = P064InfoClusterGroupAlphabeticalKey.ACTION_GET_BARRAS, state = PortletState.DEFAULT, response = ResponseMode.AJAX)
+  public String eventViewBarras() throws IOException, PortletException, TechnicalErrorException {
+    // PortletPreferences preferences = FrameworkUtils.getPreferences();
+
+    HashMap<String, Object> data = new HashMap<String, Object>();
+    try {
+      // Inicializamos valores
+      List<EntryEditor> lstselectData = new ArrayList<EntryEditor>();
+
+      // Insertamos datos de identificacion de select
+      String defaultActionSelect = (String) getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.DEFAULT_VALUE_ID_RC_ACTION_SELECT);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_ID, defaultActionSelect);
+
+      String defaultValueSelectAction = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.DEFAULT_VALUE_ACTION);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_ACTION_SELECT_DEFAULT, defaultValueSelectAction);
+
+      String defaultValueSelect = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_DEFAULT_RICH_COMBO_BARRA_SELECT);
+      data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_DEFAULT, defaultValueSelect);
+
+      // Comprobamos si la acción fue correcta
+      String stAction = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_STATUS_ACTION, "");
+      if (!GenericUtils.isEmpty(stAction) && P064InfoClusterGroupAlphabeticalKey.OK.equals(stAction)) {
+
+        TipoAgrupadorPreferencias enlaceNotificacionTipoPrefs = getModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.BEANID_TIPO_PREF_DATA, new TipoAgrupadorPreferencias());
+
+        if (enlaceNotificacionTipoPrefs.getPreferencia() != null) {
+          for (TipoAgrupadorPreferencia tipoPref : enlaceNotificacionTipoPrefs.getPreferencia()) {
+            lstselectData.add(new EntryEditor(tipoPref.getName(), tipoPref.getId()));
+          }
+        }
+
+        data.put(P064InfoClusterGroupAlphabeticalKey.JSON_PARAM_SELECT_DATA, lstselectData);
+      }
+    } catch (Exception e) {
+    	FrameworkUtils.getLogger().error(e.getMessage(), e);
+      data.put(P064InfoClusterGroupAlphabeticalKey.PARAM_STATUS_ACTION, P064InfoClusterGroupAlphabeticalKey.ERR);
+    }
+    return sendJSONResponse(P064InfoClusterGroupAlphabeticalKey.JS_FUNCTION_SETOPTIONSELECT, data);
+  }
+
+}

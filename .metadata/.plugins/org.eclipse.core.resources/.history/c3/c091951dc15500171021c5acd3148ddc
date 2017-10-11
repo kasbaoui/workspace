@@ -1,0 +1,27 @@
+package com.isban.p064informclustergroupalphabetical.actions;
+
+import com.isb.portlet.fw.annotation.ActionHandler;
+import com.isb.portlet.fw.annotation.PortletHandler;
+import com.isb.portlet.fw.base.BaseActionHandler;
+import com.isban.p064informclustergroupalphabetical.keys.P064InfoClusterGroupAlphabeticalKey;
+
+/**
+ * The Class P064InfoClusterGroupAlphabeticalInitAction.
+ */
+@PortletHandler
+public class P064InfoClusterGroupAlphabeticalInitAction extends BaseActionHandler {
+
+	/**
+	 * Inits the view action.
+	 *
+	 * @return the string
+	 */
+	@ActionHandler(action=P064InfoClusterGroupAlphabeticalKey.ACTION_W064INFOCLUSTERGROUPALPHABETICAL_DEFAULT)
+	public String initViewAction() {
+
+		return P064InfoClusterGroupAlphabeticalKey.RENDER_W064INFOCLUSTERGROUPALPHABETICAL_DEFAULT;
+	}
+	
+
+	
+}

@@ -1,0 +1,107 @@
+package com.isban.p064informclustergroupalphabetical.integration;
+
+import com.isb.portlet.fw.base.FrameworkUtils;
+import com.isban.portales.servicios.liferayapi.estructuras.LRGrouper;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.service.GroupLocalServiceUtil;
+import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
+import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.portlet.journal.model.JournalArticle;
+import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import es.isban.portlets.util.PortalCommonUtil;
+
+
+public class P064InfoClusterGroupAlphabeticalServiceUtil {	private P040DocumentsGroupingServiceUtil() {
+	throw new IllegalAccessError(P040DocumentsGroupingKey.JSP_ERROR);
+}
+
+/**
+ * Returns links preferences List for selection combo
+ * 
+ * @param subtypeGrouper
+ * @param groupId
+ * @param themeDisplay
+ * @return
+ * @throws Exception
+ */
+public static List<TipoPreferencia> getLinkPreferencias(String subtypeGrouper, long groupId,
+		ThemeDisplay themeDisplay) throws Exception {
+
+	List<TipoPreferencia> listaLRGroupers = new ArrayList<TipoPreferencia>();
+
+	try {
+
+		Group globalGroup = GroupLocalServiceUtil.getCompanyGroup(PortalCommonUtil.getCompanyId());
+		List<DDMStructure> journalStructures = DDMStructureLocalServiceUtil.getStructures(globalGroup.getGroupId());
+
+		for (DDMStructure structure : journalStructures) {
+
+			if (P040DocumentsGroupingKey.TYPE_LRGROUPER.equalsIgnoreCase(structure.getNameCurrentValue())) {
+				List<JournalArticle> journalArticles = JournalArticleLocalServiceUtil.getStructureArticles(groupId,
+						structure.getStructureKey());
+
+				for (JournalArticle journalArticle : journalArticles) {
+					boolean isLastestOne = JournalArticleLocalServiceUtil.isLatestVersion(groupId,
+							journalArticle.getArticleId(), journalArticle.getVersion());
+					if (!journalArticle.isInTrash() && isLastestOne) {
+
+						LRGrouper lrgrouper = new LRGrouper(journalArticle, FrameworkUtils.getLocale().toString(),
+								themeDisplay);
+
+						if ((lrgrouper.getSubtipo()).equalsIgnoreCase(subtypeGrouper)) {
+							TipoPreferencia tp = new TipoPreferencia();
+							tp.setCid(journalArticle.getUrlTitle());
+							tp.setNombre(journalArticle.getTitle(FrameworkUtils.getLocale().toString()));
+							tp.setTitulo(lrgrouper.getTitulo());
+							listaLRGroupers.add(tp);
+						}
+					}
+				}
+				break;
+			}
+		}
+
+	} catch (Exception e) {
+		FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(e), e);
+	}
+
+	return listaLRGroupers;
+
+}
+
+/**
+ * @param groupId
+ * @param urlTitle
+ * @param locale
+ * @param subtypeGrouper
+ * @param themeDisplay
+ * @return
+ */
+public static LRGrouper getLRGrouperDetalle(long groupId, String urlTitle, String locale, String subtypeGrouper,
+		ThemeDisplay themeDisplay) {
+
+	LRGrouper agrupador = null;
+
+	try {
+
+		JournalArticle journalArticle = JournalArticleLocalServiceUtil.getArticleByUrlTitle(groupId, urlTitle);
+
+		agrupador = new LRGrouper(journalArticle, locale, themeDisplay);
+		if (!(agrupador.getSubtipo()).equalsIgnoreCase(subtypeGrouper)) {
+			agrupador = null;
+		}
+
+	} catch (Exception e) {
+		FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(e), e);
+	}
+
+	return agrupador;
+
+}
+}

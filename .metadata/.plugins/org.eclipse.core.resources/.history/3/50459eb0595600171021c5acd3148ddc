@@ -1,0 +1,8 @@
+define('W064InfoClusterGroupAlphabeticalModule', [],
+	function(){
+	
+		return {
+			
+		};
+		
+});

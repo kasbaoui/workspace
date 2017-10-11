@@ -1,0 +1,381 @@
+package com.isban.p064informclustergroupalphabetical.views;
+
+import com.isb.portlet.fw.annotation.PortletHandler;
+import com.isb.portlet.fw.annotation.PortletMode;
+import com.isb.portlet.fw.annotation.PortletState;
+import com.isb.portlet.fw.annotation.RenderHandler;
+import com.isb.portlet.fw.annotation.ResponseMode;
+import com.isb.portlet.fw.base.BaseRenderHandler;
+import com.isb.portlet.fw.base.FrameworkUtils;
+import com.isb.portlet.fw.base.LayoutInfo;
+import com.isb.portlet.fw.base.Scope;
+import com.isban.model.TipoAgrupador;
+import com.isban.model.TipoAgrupadorPaginado;
+import com.isban.model.TipoAgrupadorPaginadoDR;
+import com.isban.model.TipoAgrupadoresPaginadoDR;
+import com.isban.model.TipoInformacion;
+import com.isban.model.TipoLink;
+import com.isban.p064informclustergroupalphabetical.integration.P064InfoClusterGroupAlphabeticalServiceUtil;
+import com.isban.p064informclustergroupalphabetical.keys.P064InfoClusterGroupAlphabeticalKey;
+import com.isban.p064informclustergroupalphabetical.model.AgrupBean;
+import com.isban.p064informclustergroupalphabetical.model.AgrupsBean;
+import com.isban.p064informclustergroupalphabetical.model.InfoBean;
+import com.isban.portales.utilidades.commons.exceptions.functional.WSAccessException;
+import com.isban.portales.utilidades.commons.exceptions.technical.PropertyAccessException;
+import com.isban.portales.utilidades.commons.exceptions.technical.TechnicalException;
+import com.isban.portales.utilidades.commons.keys.GenericConstants;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.model.Layout;
+import com.liferay.portal.service.ClassNameLocalServiceUtil;
+import com.liferay.portal.service.LayoutLocalServiceUtil;
+import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portlet.expando.model.ExpandoTableConstants;
+import com.liferay.portlet.expando.service.ExpandoValueLocalServiceUtil;
+
+import java.io.Serializable;
+import java.text.Collator;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.portlet.PortletException;
+import javax.portlet.PortletPreferences;
+
+/**
+ * Default render class for VIEW mode
+ * 
+ * @author IsBan
+ * 
+ */
+@PortletHandler
+public class P064InfoClusterGroupAlphabeticalRenderView extends BaseRenderHandler {
+
+	private PortletPreferences prefs;
+	private String language, portal, secure;
+
+	private void initCommonProperties() {
+		try {
+			// Get The common properties for the portlet
+			// portal = GenericUtils.getPortalForFatwire();
+			language = FrameworkUtils.getLocale().toString();
+			prefs = FrameworkUtils.getPreferences();
+		} catch (Exception exc) {
+			FrameworkUtils.getLogger().error(GenericConstants.MSG_ERROR, exc);
+		}
+	}
+
+	/**
+	 * Default render method for VIEW mode
+	 * 
+	 * @return
+	 */
+	@RenderHandler(view = P064InfoClusterGroupAlphabeticalKey.RENDER_P064INFOCLUSTERGROUPALPHABETICAL_DEFAULT, response = ResponseMode.DEFAULT, mode = PortletMode.VIEW, state = PortletState.DEFAULT)
+	public String renderViewDefault() {
+
+		String targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_DEFAULT;
+
+		try {
+
+			initCommonProperties();
+
+			if (isAllMandatoryPrefsSetted(prefs)) {
+
+				String agrupAgrupPref = prefs.getValue(
+						P064InfoClusterGroupAlphabeticalKey.LR_PREF_PARAM_VALUE_RICH_COMBO_AGRUP,
+						GenericConstants.CTE_EMPTY);
+				TipoAgrupadorPaginado agrupAgrup = null;
+				if (agrupAgrupPref != null && !agrupAgrupPref.trim().isEmpty()) {
+					agrupAgrup = getContenidosAgrupDetPag(agrupAgrupPref);
+				}
+				FrameworkUtils.setModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_BEAN_AGRUP,
+						organizaAgrups(agrupAgrup));
+
+				String linkPrefs = prefs.getValue(
+						P064InfoClusterGroupAlphabeticalKey.LR_PREF_PARAM_VALUE_RICH_COMBO_BARRA,
+						GenericConstants.CTE_EMPTY);
+				TipoAgrupadorPaginadoDR agrupBarra = null;
+				if (linkPrefs != null && !linkPrefs.trim().isEmpty()) {
+					agrupBarra = getLinksDetail(linkPrefs);
+				}
+				FrameworkUtils.setModelData(Scope.REQUEST, P064InfoClusterGroupAlphabeticalKey.PARAM_BEAN_BARRA,
+						agrupBarra);
+
+			} else {
+
+				targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_NOPREFERENCES;
+
+			}
+
+		} catch (WSAccessException e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+			targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_ERROR;
+		} catch (TechnicalException e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+			targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_ERROR;
+		} catch (PortletException e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+			targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_ERROR;
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error(e.getMessage(), e);
+			targetPage = P064InfoClusterGroupAlphabeticalKey.JSP_P064INFOCLUSTERGROUPALPHABETICAL_ERROR;
+		}
+
+		return targetPage;
+	}
+
+	private AgrupsBean organizaAgrups(TipoAgrupadorPaginado agrupPag) throws PortletException, PropertyAccessException {
+
+		AgrupsBean agrupsBean = new AgrupsBean();
+
+		agrupsBean.setTitulo(agrupPag.getTitulo());
+		agrupsBean.setCuerpo(agrupPag.getUrlcuerpo());
+
+		List<AgrupBean> listaAgrups = new ArrayList<AgrupBean>();
+		for (TipoAgrupador agr : agrupPag.getContenidosAsociados2().getElementos().getAgrupador()) {
+			AgrupBean agrupBean = new AgrupBean();
+			agrupBean.setTitulo(agr.getTitulo());
+			agrupBean.setCuerpo(agr.getUrlcuerpo());
+
+			List<TipoInformacion> listaInfos = null;
+			if (agr.getContenidosAsociados2() != null) {
+				listaInfos = agr.getContenidosAsociados2().getInformacion();
+				Collections.sort(listaInfos, new Comparator<TipoInformacion>() {
+					public int compare(TipoInformacion i1, TipoInformacion i2) {
+						Collator comparador = Collator.getInstance();
+						comparador.setStrength(Collator.PRIMARY);
+						return comparador.compare(i1.getTitulo(), i2.getTitulo());
+					}
+				});
+				int mitad = listaInfos.size() / 2;
+				if (listaInfos.size() % 2 == 1) {
+					mitad++;
+				}
+				List<InfoBean> listaInfosCol1 = new ArrayList<InfoBean>();
+				List<InfoBean> listaInfosCol2 = new ArrayList<InfoBean>();
+				for (int i = 0; i < listaInfos.size(); i++) {
+					InfoBean info = new InfoBean();
+					info.setCid(listaInfos.get(i).getCid());
+					info.setTitulo(listaInfos.get(i).getTitulo());
+					if (listaInfos.get(i).getMedia() != null) {
+						info.setObjImgIcono(listaInfos.get(i).getMedia().getObjImgIcono());
+						info.setTituloImg(listaInfos.get(i).getMedia().getTitulo());
+						info.setCidImg(listaInfos.get(i).getMedia().getCid());
+						info.setAnalitica(listaInfos.get(i).getMedia().getAnalitica());
+					}
+
+					TipoLink enlace = null;
+					if (listaInfos.get(i).getLinks3() != null && listaInfos.get(i).getLinks3().size() > 0) {
+						// enlaza a Links3
+						enlace = listaInfos.get(i).getLinks3().get(0);
+					} else if (listaInfos.get(i).getCuerpo() != null
+							&& !listaInfos.get(i).getCuerpo().trim().equals(GenericConstants.CTE_EMPTY)) {
+						// enlaza a pagina detalle
+						String urlPageDetail = getFriendlyUrl(listaInfos.get(i).getSubtipo());
+						if (urlPageDetail.equals(GenericConstants.CTE_EMPTY)) {
+							urlPageDetail = getFriendlyUrl(GenericConstants.CTE_EMPTY);
+						}
+						if (!urlPageDetail.equals(GenericConstants.CTE_EMPTY)) {
+
+							enlace = new TipoLink();
+							enlace.setUrl(urlPageDetail);
+						}
+					} else if (listaInfos.get(i).getDocs() != null && listaInfos.get(i).getDocs().size() > 0) {
+						// enlaza a primer doc
+						enlace = new TipoLink();
+						enlace.setUrl(listaInfos.get(i).getDocs().get(0).getArchivo());
+						enlace.setTooltip(listaInfos.get(i).getDocs().get(0).getTooltip());
+						enlace.setTarget("SI");
+						enlace.setIndexacion(StringPool.BLANK);
+					} else if (listaInfos.get(i).getLinks() != null && listaInfos.get(i).getLinks().size() > 0) {
+						// enlaza al primer enlace
+						enlace = listaInfos.get(i).getLinks().get(0);
+					}
+
+					if (enlace != null) {
+						info.setLink(enlace);
+					}
+
+					if (i < mitad) {
+						listaInfosCol1.add(info);
+					} else {
+						listaInfosCol2.add(info);
+					}
+				}
+				agrupBean.setListaInfosCol1(listaInfosCol1);
+				agrupBean.setListaInfosCol2(listaInfosCol2);
+			}
+			listaAgrups.add(agrupBean);
+
+		}
+
+		agrupsBean.setListaAgrups(listaAgrups);
+
+		return agrupsBean;
+
+	}
+
+	private String getUrlPageDetailByLR(String customFieldValueSubtype) {
+
+		ThemeDisplay themeDisplay = (ThemeDisplay) getRequest().getAttribute(WebKeys.THEME_DISPLAY);
+		String urlPageDetail = GenericConstants.CTE_EMPTY;
+
+		try {
+			long idGroup = themeDisplay.getScopeGroupId();
+			long idCompany = themeDisplay.getCompanyId();
+			long classNameId = ClassNameLocalServiceUtil.getClassNameId(Layout.class);
+			String className = ClassNameLocalServiceUtil.getClassName(classNameId).getClassName();
+
+			if (idGroup > 0) {
+				List<Layout> listLayouts = LayoutLocalServiceUtil.getLayouts(0,
+						LayoutLocalServiceUtil.getLayoutsCount());
+				if (listLayouts != null && !listLayouts.isEmpty()) {
+					boolean encontrado = false;
+					int cont = 0;
+					while (!encontrado && cont < listLayouts.size()) {
+						if (listLayouts.get(cont).getGroupId() == idGroup) {
+							long plid = listLayouts.get(cont).getPlid();
+							Serializable customFieldType = ExpandoValueLocalServiceUtil.getData(idCompany, className,
+									ExpandoTableConstants.DEFAULT_TABLE_NAME, "Tipo", plid);
+							Serializable customFieldSubtype = ExpandoValueLocalServiceUtil.getData(idCompany, className,
+									ExpandoTableConstants.DEFAULT_TABLE_NAME, "Subtipo", plid);
+							if (customFieldType != null && "Informacion".equals(customFieldType.toString())
+									&& customFieldValueSubtype.equals(customFieldSubtype.toString())) {
+								urlPageDetail = listLayouts.get(cont).getFriendlyURL();
+								encontrado = true;
+							}
+						}
+						cont++;
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().warn(e.getMessage(), e);
+		}
+		return urlPageDetail;
+	}
+
+	/**
+	 * Searchs page that its 'Definicion' custom field contains the value
+	 * especified
+	 * 
+	 * @param subtype
+	 *            Value for the 'Definicion' custom field
+	 * @return Friendly URL who contains the value at its 'Definicion' custom
+	 *         field
+	 * @throws PortletException
+	 * @throws PropertyAccessException
+	 */
+	private String getFriendlyUrl(String subtype) throws PropertyAccessException, PortletException {
+
+		String friendlyUrl = StringPool.BLANK;
+
+		List<LayoutInfo> listLayouts;
+
+		Map<String, String> mapOfCustomFields = new HashMap<String, String>();
+		mapOfCustomFields.put(P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_TYPE,
+				P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_TYPE_VALUE);
+		mapOfCustomFields.put(P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_SUBTYPE, subtype);
+		listLayouts = getLayoutsByCustomFields(mapOfCustomFields);
+		if (!listLayouts.isEmpty()) {
+			friendlyUrl = listLayouts.get(0).getUrl();
+		} else {
+			// There's no page with this configuration. Now we only search for a
+			// page with type="${Informacion}"
+			Map<String, String> mapOfCustomField = new HashMap<String, String>();
+			mapOfCustomField.put(P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_TYPE,
+					P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_TYPE_VALUE);
+			mapOfCustomField.put(P064InfoClusterGroupAlphabeticalKey.CUSTOMFIELD_SUBTYPE, GenericConstants.CTE_EMPTY);
+			listLayouts = getLayoutsByCustomFields(mapOfCustomField);
+			if (!listLayouts.isEmpty()) {
+				friendlyUrl = listLayouts.get(0).getUrl();
+			}
+		}
+
+		return friendlyUrl;
+	}
+
+	private TipoAgrupadorPaginado getContenidosAgrupDetPag(String agrup) throws PortletException, WSAccessException, TechnicalException {
+
+	    TipoAgrupadorPaginado agrupador = null;
+
+	    String cacheKey = P064InfoClusterGroupAlphabeticalKey.CACHE_AGRUP + agrup + GenericConstants.CTE_LOWBAR + language;
+
+	    try {
+	      agrupador = (TipoAgrupadorPaginado) FrameworkUtils.getModelData(Scope.PORTLET_CACHE, cacheKey);
+	    } catch (Exception e) {
+	      FrameworkUtils.getLogger().debug(e.getMessage(),e);
+	    }
+
+	    if (agrupador == null) {
+
+	      //TipoAgrupadoresPaginado agrupadoresWS = P064InfoClusterGroupAlphabeticalIntegration.getSanAgrupadorDetallePaginado(language, portal, secure, agrup, StringPool.BLANK, StringPool.BLANK);    
+	      //agrupador = agrupadoresWS.getAgrupador().get(0);
+	    	
+	    	agrupador = P064InfoClusterGroupAlphabeticalServiceUtil.getLRGrouperDetalle(getCurrentSite(), urlTitle, language, subtypeGrouper, themeDisplay)
+
+	      FrameworkUtils.setModelData(Scope.PORTLET_CACHE, cacheKey, agrupador);
+	    }
+
+	    return agrupador;
+
+	  }
+
+	private TipoAgrupadorPaginadoDR getLinksDetail(String linkPref)
+			throws PortletException, WSAccessException, TechnicalException {
+
+		TipoAgrupadorPaginadoDR agrupador = null;
+
+		String cacheKey = P064InfoClusterGroupAlphabeticalKey.CACHE_BARRA + linkPref + GenericConstants.CTE_LOWBAR
+				+ language;
+
+		try {
+			agrupador = (TipoAgrupadorPaginadoDR) FrameworkUtils.getModelData(Scope.PORTLET_CACHE, cacheKey);
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().debug(e.getMessage(), e);
+		}
+
+		if (agrupador == null) {
+
+			TipoAgrupadoresPaginadoDR agrupadoresWS = P064InfoClusterGroupAlphabeticalIntegration
+					.getSanAgrupadorDetallePaginadoRestringido(language, portal, secure, linkPref, StringPool.BLANK,
+							StringPool.BLANK);
+
+			agrupador = agrupadoresWS.getAgrupador().get(0);
+
+			FrameworkUtils.setModelData(Scope.PORTLET_CACHE, cacheKey, agrupador);
+		}
+
+		return agrupador;
+
+	}
+
+	/**
+	 * Check mandatory fields in preferences
+	 * 
+	 * @param prefs
+	 * @return
+	 */
+	private boolean isAllMandatoryPrefsSetted(PortletPreferences prefs) {
+		boolean result = false;
+		try {
+			if (StringPool.BLANK
+					.equals(prefs.getValue(P064InfoClusterGroupAlphabeticalKey.LR_PREF_PARAM_VALUE_RICH_COMBO_AGRUP,
+							GenericConstants.CTE_EMPTY))) {
+				result = false;
+			} else {
+				result = true;
+			}
+		} catch (Exception pExc) {
+			FrameworkUtils.getLogger().debug(GenericUtils.getStringStackTrace(pExc), pExc);
+			return false;
+		}
+		return result;
+	}
+
+}

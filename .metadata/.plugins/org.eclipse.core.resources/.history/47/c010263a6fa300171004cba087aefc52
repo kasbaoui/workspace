@@ -1,0 +1,641 @@
+package com.isban.p041buscadorcontenidos.integration;
+
+import com.isb.portlet.fw.base.FrameworkUtils;
+import com.isban.model.TipoDefinicion;
+import com.isban.model.TipoParent;
+import com.isban.model.TipoTipoCategoriaPreferencia;
+import com.isban.p041buscadorcontenidos.keys.P041BuscContenidosConst;
+import com.isban.p041buscadorcontenidos.model.LRGrouperExt;
+import com.isban.portales.servicios.liferayapi.utilidades.UtilidadesAPI;
+import com.isban.portales.utilidades.commons.utils.GenericUtils;
+import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.exception.SystemException;
+import com.liferay.portal.kernel.util.ListUtil;
+import com.liferay.portal.kernel.util.ParamUtil;
+import com.liferay.portal.kernel.util.StringPool;
+import com.liferay.portal.kernel.util.WebKeys;
+import com.liferay.portal.kernel.xml.Document;
+import com.liferay.portal.kernel.xml.DocumentException;
+import com.liferay.portal.kernel.xml.Node;
+import com.liferay.portal.kernel.xml.SAXReaderUtil;
+import com.liferay.portal.model.Group;
+import com.liferay.portal.model.Layout;
+import com.liferay.portal.service.GroupLocalServiceUtil;
+import com.liferay.portal.service.LayoutLocalServiceUtil;
+import com.liferay.portal.theme.ThemeDisplay;
+import com.liferay.portlet.asset.model.AssetCategory;
+import com.liferay.portlet.asset.model.AssetVocabulary;
+import com.liferay.portlet.asset.service.AssetCategoryLocalServiceUtil;
+import com.liferay.portlet.asset.service.AssetVocabularyLocalServiceUtil;
+import com.liferay.portlet.documentlibrary.model.DLFileEntry;
+import com.liferay.portlet.documentlibrary.model.DLFileEntryMetadata;
+import com.liferay.portlet.documentlibrary.service.DLFileEntryLocalServiceUtil;
+import com.liferay.portlet.documentlibrary.service.DLFileEntryMetadataLocalServiceUtil;
+import com.liferay.portlet.dynamicdatamapping.model.DDMStructure;
+import com.liferay.portlet.dynamicdatamapping.service.DDMStructureLocalServiceUtil;
+import com.liferay.portlet.dynamicdatamapping.storage.Fields;
+import com.liferay.portlet.dynamicdatamapping.storage.StorageEngineUtil;
+import com.liferay.portlet.journal.model.JournalArticle;
+import com.liferay.portlet.journal.service.JournalArticleLocalServiceUtil;
+import com.liferay.portlet.journal.util.comparator.ArticleCreateDateComparator;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+import es.isban.portlets.util.PortalCommonUtil;
+
+public class P041BuscContenidosServiceUtil {
+
+	/**
+	 * Devuelve los subtipos de un tipo de contenidos
+	 * 
+	 * @param family
+	 * @param groupId
+	 * @return
+	 * @throws Exception
+	 */
+	public static List<TipoDefinicion> getSubtypes(String family, long groupId) throws Exception {
+
+		List<TipoDefinicion> list = new ArrayList<TipoDefinicion>();
+		Locale locale = FrameworkUtils.getLocale();
+		Group globalGroup = GroupLocalServiceUtil.getCompanyGroup(PortalCommonUtil.getCompanyId());
+
+		// Recupera las estructuras del sitio web
+		List<DDMStructure> structures = DDMStructureLocalServiceUtil.getStructures(globalGroup.getGroupId());
+
+		for (DDMStructure structure : structures) {
+
+			// Comprueba si la estructura correponde al tipo buscado
+			if (family.equalsIgnoreCase(structure.getNameCurrentValue())) {
+
+				// Recupera el campo subtipo de la estructura
+				List<String> fields = structure.getChildrenFieldNames("subtipo");
+				if (!fields.isEmpty()) {
+
+					// Agrega las diferentes opciones disponibles de subtipo al
+					// listado de resultados
+					for (String field : fields) {
+						TipoDefinicion def = new TipoDefinicion();
+						def.setCid(structure.getFieldProperty(field, "value"));
+						def.setNombre(structure.getFieldLabel(field, locale));
+						list.add(def);
+					}
+				}
+				break;
+			}
+		}
+		return list;
+	}
+
+	/**
+	 * Devuelve los vocabularios disponibles
+	 * 
+	 * @param pagina
+	 * @param elementos
+	 * @param tipo
+	 * @param subtipo
+	 * @return
+	 * @throws Exception
+	 */
+	public static List<TipoTipoCategoriaPreferencia> getVocabularies(long groupId, String pagina, String elementos,
+			String tipo, String subtipo) throws Exception {
+
+		List<TipoTipoCategoriaPreferencia> list = new ArrayList<TipoTipoCategoriaPreferencia>();
+		// Group globalGroup =
+		// GroupLocalServiceUtil.getCompanyGroup(PortalCommonUtil.getCompanyId());
+		Locale locale = FrameworkUtils.getLocale();
+
+		// Recupera los vocabularios del sitio web global
+		List<AssetVocabulary> vocabularies = AssetVocabularyLocalServiceUtil.getGroupVocabularies(groupId);
+
+		for (AssetVocabulary voc : vocabularies) {
+
+			// Agrega el vocabulario al listado de resultados
+			TipoTipoCategoriaPreferencia vocBean = new TipoTipoCategoriaPreferencia();
+			vocBean.setId(String.valueOf(voc.getVocabularyId()));
+			vocBean.setName(voc.getName());
+			vocBean.setTitulo(voc.getTitle(locale));
+			list.add(vocBean);
+		}
+		return list;
+	}
+
+	/**
+	 * Devuelve las categorias de un vocabulario dado
+	 * 
+	 * @param categoria
+	 * @param vocabulary
+	 * @return
+	 * @throws Exception
+	 */
+	public static List<TipoParent> getCategories(String categoria, String vocabulary) throws Exception {
+
+		List<TipoParent> list = new ArrayList<TipoParent>();
+		Locale locale = FrameworkUtils.getLocale();
+
+		// Recupera las categorias del vocabulario elegido
+		List<AssetCategory> categories = AssetCategoryLocalServiceUtil
+				.getVocabularyCategories(Long.parseLong(vocabulary), QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		// Rellena el bean con los datos de la categoria y lo agrega al listado
+		for (AssetCategory cat : categories) {
+			TipoParent catBean = new TipoParent();
+			// catBean.setCid(String.valueOf(cat.getCategoryId()));
+			catBean.setCid(cat.getUuid());
+			catBean.setNombre(cat.getName());
+			catBean.setSubtipo(cat.getModelClassName());
+			catBean.setTitulo(cat.getTitle(locale));
+			catBean.setTipoCategoria(null);
+			list.add(catBean);
+		}
+		return list;
+	}
+
+	/**
+	 * Busqueda parametrizable en los contenidos de LR
+	 * 
+	 * @param groupId
+	 * @param tipo
+	 * @param subtipo
+	 * @param pagina
+	 * @param elementos
+	 * @param orden
+	 * @param themeDisplay
+	 * @return
+	 * @throws SystemException
+	 * @throws PortalException
+	 * @throws Exception
+	 */
+	public static List<LRGrouperExt> getLastSearches(long groupId, String tipo, String subtipo, String pagina,
+			String elementos, String orden, ThemeDisplay themeDisplay) throws PortalException, SystemException {
+
+		List<LRGrouperExt> itemsList = new ArrayList<LRGrouperExt>();
+
+		// Recupera el sitio web global
+		Group globalGroup = GroupLocalServiceUtil.getCompanyGroup(PortalCommonUtil.getCompanyId());
+		String locale = FrameworkUtils.getLocale().toString();
+
+		try {
+
+			// Recupera las estructuras del sitio web global
+			List<DDMStructure> structures = DDMStructureLocalServiceUtil.getStructures(globalGroup.getGroupId());
+			for (DDMStructure structure : structures) {
+
+				// Comprueba si la estructura corresponde al tipo buscado
+				FrameworkUtils.getLogger().info("Search type [" + tipo + "]");
+
+				if (tipo.equalsIgnoreCase(structure.getNameCurrentValue())) {
+
+					// CASO LRLink
+					if (P041BuscContenidosConst.TYPE_LINK.equalsIgnoreCase(tipo)) {
+						FrameworkUtils.getLogger().info("CASE A - LRLink - Subtype [" + subtipo + "]");
+
+						// Recupera todos los contenidos con el tipo encontrado
+						List<JournalArticle> journalArticles = JournalArticleLocalServiceUtil.getStructureArticles(
+								groupId, structure.getStructureKey(), QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+								new ArticleCreateDateComparator(true));
+
+						for (JournalArticle journalArticle : journalArticles) {
+
+							// Comprueba que el contenido es la ultima version
+							boolean isLastestOne = JournalArticleLocalServiceUtil.isLatestVersion(groupId,
+									journalArticle.getArticleId(), journalArticle.getVersion());
+
+							if (!journalArticle.isInTrash() && journalArticle.isApproved() && isLastestOne
+									&& (subtipo.equalsIgnoreCase(getFieldValue(
+											P041BuscContenidosConst.LRLINK_STRUCTURE_SUBTYPE, journalArticle, locale))
+											|| subtipo.equalsIgnoreCase(StringPool.BLANK))) {
+
+								FrameworkUtils.getLogger()
+										.info("Article Subtype ["
+												+ getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_SUBTYPE,
+														journalArticle, locale)
+												+ "]");
+
+								LRGrouperExt lrgrouper = new LRGrouperExt();
+								lrgrouper.setArticleID(journalArticle.getArticleId());
+								lrgrouper.setTitulo(journalArticle.getUrlTitle());
+								lrgrouper.setTituloVisual(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_TITLE,
+										journalArticle, locale));
+								lrgrouper.setTooltip(getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_TOOLTIP,
+										journalArticle, locale));
+								lrgrouper.setTarget(getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_TARGET,
+										journalArticle, locale));
+								lrgrouper.setIndexacion(getFieldValue(
+										P041BuscContenidosConst.LRLINK_STRUCTURE_INDEXATION, journalArticle, locale));
+								lrgrouper.setSubtipo(getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_SUBTYPE,
+										journalArticle, locale));
+								lrgrouper.setAnalitica(getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_ANALYTIC,
+										journalArticle, locale));
+								lrgrouper.setSubtitulo(getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_SUBTITLE,
+										journalArticle, locale));
+								lrgrouper.setUrlTitle(GenericUtils.isEmpty(getFieldValue(
+										P041BuscContenidosConst.LRLINK_STRUCTURE_URL, journalArticle, locale))
+												? getUrlFromLTP(
+														getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_URL_LTP,
+																journalArticle, locale),
+														themeDisplay)
+												: getFieldValue(P041BuscContenidosConst.LRLINK_STRUCTURE_URL,
+														journalArticle, locale));
+								itemsList.add(lrgrouper);
+							}
+						}
+
+						// CASO LRInformation
+					} else if (P041BuscContenidosConst.TYPE_INFO.equalsIgnoreCase(tipo)) {
+						FrameworkUtils.getLogger().info("CASE B - LRInformation - Subtype [" + subtipo + "]");
+
+						// Recupera todos los contenidos con el tipo encontrado
+						List<JournalArticle> journalArticles = JournalArticleLocalServiceUtil
+								.getStructureArticles(groupId, structure.getStructureKey());
+
+						for (JournalArticle journalArticle : journalArticles) {
+
+							// Comprueba que el contenido es la ultima version
+							boolean isLastestOne = JournalArticleLocalServiceUtil.isLatestVersion(groupId,
+									journalArticle.getArticleId(), journalArticle.getVersion());
+
+							if (!journalArticle.isInTrash() && journalArticle.isApproved() && isLastestOne
+									&& (subtipo.equalsIgnoreCase(getFieldValue(
+											P041BuscContenidosConst.LRINFO_STRUCTURE_SUBTYPE, journalArticle, locale))
+											|| subtipo.equalsIgnoreCase(StringPool.BLANK))) {
+
+								FrameworkUtils.getLogger()
+										.info("Article Subtype ["
+												+ getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_SUBTYPE,
+														journalArticle, locale)
+												+ "]");
+
+								LRGrouperExt lrgrouper = new LRGrouperExt();
+								lrgrouper.setArticleID(journalArticle.getArticleId());
+								lrgrouper.setTitulo(getLink(journalArticle, locale, themeDisplay));
+								lrgrouper.setTarget(getTarget(journalArticle, locale));
+								lrgrouper.setIndexacion(getIndexacion(journalArticle, locale));
+								// lrgrouper.setCuerpo(getTarget(journalArticle,
+								// locale));
+								lrgrouper.setTituloVisual(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_TITLE,
+										journalArticle, locale));
+								lrgrouper.setTooltip(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_TOOLTIP,
+										journalArticle, locale));
+								lrgrouper.setSubtipo(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_SUBTYPE,
+										journalArticle, locale));
+								lrgrouper.setAnalitica(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_ANALYTIC,
+										journalArticle, locale));
+								lrgrouper.setSubtitulo(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_SUBTITLE,
+										journalArticle, locale));
+								lrgrouper.setEntradilla(getFieldValue(
+										P041BuscContenidosConst.LRINFO_STRUCTURE_ENTRADILLA, journalArticle, locale));
+								lrgrouper.setUrlTitle(journalArticle.getUrlTitle());
+								lrgrouper.setFecha(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_FECHA,
+										journalArticle, locale));
+								FrameworkUtils.getLogger().info("Fecha [" + lrgrouper.getFecha() + "]");
+								itemsList.add(lrgrouper);
+
+							}
+						}
+
+						// CASO LRDocument
+					} else if (P041BuscContenidosConst.TYPE_DOC.equalsIgnoreCase(tipo)) {
+						FrameworkUtils.getLogger().info("CASE C - Documents");
+
+						// Recupera si hay documentos con el tipo seleccionado
+						List<DLFileEntry> documents = DLFileEntryLocalServiceUtil
+								.getDDMStructureFileEntries(new long[] { structure.getStructureId() });
+						
+						// TODO Filter by category
+						get
+						
+						
+						for (DLFileEntry doc : documents) {
+							if (doc != null && !doc.isInTrash() && groupId == doc.getGroupId()) {
+
+								// Recupera los campos del LRDocument
+								DLFileEntryMetadata dlFileEntryMetadata = DLFileEntryMetadataLocalServiceUtil
+										.getFileEntryMetadata(structure.getStructureId(),
+												doc.getLatestFileVersion(true).getFileVersionId());
+								Fields fields = StorageEngineUtil.getFields(dlFileEntryMetadata.getDDMStorageId());
+								String analitica = (String) fields.get(P041BuscContenidosConst.LRDOC_STRUCTURE_ANALYTIC)
+										.getValue();
+								String tooltip = (String) fields.get(P041BuscContenidosConst.LRDOC_STRUCTURE_TOOLTIP)
+										.getValue();
+								Date fecha = !StringPool.BLANK
+										.equals(fields.get(P041BuscContenidosConst.LRDOC_STRUCTURE_FECHA).getValue())
+												? (Date) fields.get(P041BuscContenidosConst.LRDOC_STRUCTURE_FECHA)
+														.getValue()
+												: null;
+
+								String tituloVisual = (String) fields.get(P041BuscContenidosConst.LRDOC_STRUCTURE_TITLE)
+										.getValue();
+								String docUrl = UtilidadesAPI.getFileURL(doc, themeDisplay);
+
+								LRGrouperExt lrgrouper = new LRGrouperExt();
+								lrgrouper.setTitulo(docUrl);
+								lrgrouper.setArticleID(String.valueOf(doc.getUuid()));
+								lrgrouper.setAnalitica(analitica);
+								lrgrouper.setFecha(fecha);
+								lrgrouper.setTooltip(tooltip);
+								lrgrouper.setTituloVisual(tituloVisual);
+								itemsList.add(lrgrouper);
+							}
+						}
+					}
+
+				}
+			}
+			// Ordenamos los resultados por el campo fecha
+			ListUtil.sort(itemsList, new P041ComparadorLRGrouperExt());
+
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error(GenericUtils.getStringStackTrace(e), e);
+		}
+		return itemsList;
+	}
+
+	/**
+	 * Build conditional link
+	 * 
+	 * @param journalArticle
+	 * @param locale
+	 * @return
+	 * @throws DocumentException
+	 */
+	private static String getLink(JournalArticle journalArticle, String locale, ThemeDisplay td)
+			throws DocumentException {
+		String link = StringPool.BLANK;
+
+		if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale))) {
+
+			FrameworkUtils.getLogger().info("CASE 1 - Link titulo");
+
+			link = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale);
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(
+						getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 2 - Detail page");
+
+			link = P041BuscContenidosConst.DETAILS_PAGE;
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale) != null
+				&& !StringPool.BLANK
+						.equals(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 3 - Doc");
+
+			link = getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale);
+		} else if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale) != null
+				&& (!StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale))
+						|| !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+								P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL_LTP, journalArticle, locale)))) {
+			FrameworkUtils.getLogger().info("CASE 4 - Links");
+
+			link = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale);
+
+			// Si el enlace no está contribuido busca el LinkToPage
+			if (link == null || StringPool.BLANK.equalsIgnoreCase(link)) {
+				String ltp = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL_LTP, journalArticle, locale);
+				if (ltp != null && !StringPool.BLANK.equalsIgnoreCase(ltp))
+					link = getUrlFromLTP(ltp, td);
+			}
+
+		}
+		FrameworkUtils.getLogger().info("Link from structure [" + link + "]");
+
+		return link;
+	}
+
+	/**
+	 * Get target field
+	 * 
+	 * @param journalArticle
+	 * @param locale
+	 * @return
+	 * @throws DocumentException
+	 */
+	private static String getTarget(JournalArticle journalArticle, String locale) throws DocumentException {
+		String target = StringPool.BLANK;
+
+		if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale))) {
+
+			FrameworkUtils.getLogger().info("CASE 1 - Link titulo");
+
+			target = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_TARGET, journalArticle, locale);
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(
+						getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 2 - Detail page");
+
+			target = P041BuscContenidosConst.DETAILS_PAGE;
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale) != null
+				&& !StringPool.BLANK
+						.equals(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 3 - Doc");
+
+			target = "_blank";
+		} else if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 4 - Links");
+
+			target = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_TARGET, journalArticle, locale);
+
+		}
+		FrameworkUtils.getLogger().info("Target from structure [" + target + "]");
+
+		return target;
+	}
+
+	/**
+	 * Get target field
+	 * 
+	 * @param journalArticle
+	 * @param locale
+	 * @return
+	 * @throws DocumentException
+	 */
+	private static String getIndexacion(JournalArticle journalArticle, String locale) throws DocumentException {
+		String indexacion = StringPool.BLANK;
+
+		if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_URL, journalArticle, locale))) {
+
+			FrameworkUtils.getLogger().info("CASE 1 - Link titulo");
+
+			indexacion = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINK_TITULO_INDEX, journalArticle, locale);
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(
+						getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_CUERPO, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 2 - Detail page");
+
+			// indexacion = P041BuscContenidosConst.DETAILS_PAGE;
+			indexacion = StringPool.BLANK;
+
+		} else if (getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale) != null
+				&& !StringPool.BLANK
+						.equals(getFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_DOCS, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 3 - Doc");
+
+			indexacion = "";
+		} else if (getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+				P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale) != null
+				&& !StringPool.BLANK.equals(getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+						P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_URL, journalArticle, locale))) {
+			FrameworkUtils.getLogger().info("CASE 4 - Links");
+
+			indexacion = getChildFieldValue(P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS,
+					P041BuscContenidosConst.LRINFO_STRUCTURE_LINKS_INDEX, journalArticle, locale);
+
+		}
+		FrameworkUtils.getLogger().info("Indexacion from structure [" + indexacion + "]");
+
+		return indexacion;
+	}
+
+	/**
+	 * Returns friendly URL from Link to Page field
+	 * 
+	 * @param ltp
+	 * @return
+	 * @throws SystemException
+	 * @throws PortalException
+	 */
+	private static String getUrlFromLTP(String ltp, ThemeDisplay td) {
+
+		String url = StringPool.BLANK;
+		long layoutId = 0;
+		boolean privateLayout = false;
+		long groupId = 0;
+
+		// Parsea el contenido del campo
+		String[] params = ltp.split(StringPool.AT);
+		if (params != null && params.length == 3) {
+			layoutId = Long.parseLong(params[0]);
+			privateLayout = params[1].equalsIgnoreCase(P041BuscContenidosConst.LRLINK_STRUCTURE_URL_LTP_PUBLIC) ? false
+					: true;
+			groupId = Long.parseLong(params[2]);
+		}
+
+		try {
+			// Busca el layout en el API de LR y recupera la friendly URL
+			Layout layout = LayoutLocalServiceUtil.getLayout(groupId, privateLayout, layoutId);
+			if (layout != null) {
+				url = td.getURLPortal()
+						+ (privateLayout ? td.getPathFriendlyURLPrivateGroup() : td.getPathFriendlyURLPublic())
+						+ td.getSiteGroup().getFriendlyURL() + layout.getFriendlyURL();
+			}
+		} catch (Exception e) {
+			FrameworkUtils.getLogger().error("Error getting Friendly URL - ", e.getMessage());
+			return StringPool.BLANK;
+		}
+
+		return url;
+	}
+
+	/**
+	 * Parses structure field value
+	 * 
+	 * @param fieldname
+	 * @param journalArticle
+	 * @param locale
+	 * @return
+	 * @throws DocumentException
+	 */
+	public static String getFieldValue(String fieldname, JournalArticle journalArticle, String locale)
+			throws DocumentException {
+
+		String field = StringPool.BLANK;
+		Document document = SAXReaderUtil.read(journalArticle.getContentByLocale(locale));
+		Node node = document.selectSingleNode("/root/dynamic-element[@name='" + fieldname + "']/dynamic-content");
+
+		if (node != null && node.getText() != null)
+			field = node.getText().replace(StringPool.OPEN_BRACKET, StringPool.BLANK)
+					.replace(StringPool.QUOTE, StringPool.BLANK).replace(StringPool.CLOSE_BRACKET, StringPool.BLANK);
+		// FrameworkUtils.getLogger().info("Field [" + fieldname + "] - Value ["
+		// + field + "]");
+
+		return field;
+
+	}
+
+	/**
+	 * Parses a level 2 structure field value
+	 * 
+	 * @param fieldname
+	 * @param journalArticle
+	 * @param locale
+	 * @return
+	 * @throws DocumentException
+	 */
+	private static String getChildFieldValue(String parentField, String fieldname, JournalArticle journalArticle,
+			String locale) throws DocumentException {
+
+		String field = StringPool.BLANK;
+		Document document = SAXReaderUtil.read(journalArticle.getContentByLocale(locale));
+		Node node = document.selectSingleNode("/root/dynamic-element[@name='" + parentField
+				+ "']/dynamic-element[@name='" + fieldname + "']/dynamic-content");
+
+		if (node != null && node.getText() != null)
+			field = node.getText().replace(StringPool.OPEN_BRACKET, StringPool.BLANK)
+					.replace(StringPool.QUOTE, StringPool.BLANK).replace(StringPool.CLOSE_BRACKET, StringPool.BLANK);
+		// FrameworkUtils.getLogger()
+		// .info("Parent Field [" + fieldname + "] // Child Field [" + fieldname
+		// + "] - Value [" + field + "]");
+
+		return field;
+
+	}
+
+	
+	 
+	
+	
+	/**
+	 * Return categoryId by category name and vocabulary
+	 * 
+	 * @param groupId
+	 * @param categoryName
+	 * @param vocabularyName
+	 * @return
+	 * @throws PortalException
+	 * @throws SystemException
+	 */
+	private static long getCategoryByName(long groupId, String categoryName, String vocabularyName)
+			throws PortalException, SystemException {
+
+		List<AssetCategory> categoryList = new ArrayList<AssetCategory>();
+		AssetVocabulary vocabulary = AssetVocabularyLocalServiceUtil.getGroupVocabulary(groupId, vocabularyName);
+		long vocabularyId = vocabulary.getVocabularyId();
+		long categoryId = 0L;
+		categoryList = AssetCategoryLocalServiceUtil.getVocabularyCategories(vocabularyId, QueryUtil.ALL_POS,
+				QueryUtil.ALL_POS, null);
+
+		for (AssetCategory asset : categoryList) {
+			if (categoryName.equalsIgnoreCase(asset.getName()))
+				categoryId = asset.getCategoryId();
+		}
+		return categoryId;
+	}
+
+}
